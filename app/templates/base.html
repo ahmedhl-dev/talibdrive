@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalibDrive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        .logo-font { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+    <nav class="bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center h-16">
+        <a href="/" class="logo-font text-green-700 font-extrabold text-xl tracking-tight">TalibDrive</a>
+        <div class="flex items-center gap-5 text-sm font-medium">
+            {% if current_user.is_authenticated %}
+                <span class="text-gray-400">Bonjour, <span class="text-green-700 font-semibold">{{ current_user.prenom }}</span></span>
+                <a href="{{ url_for('trajets.index') }}" class="text-gray-600 hover:text-green-700 transition">Trajets</a>
+                <a href="{{ url_for('reservations.mes_reservations') }}" class="text-gray-600 hover:text-green-700 transition">Mes reservations</a>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('admin.index') }}" class="text-purple-600 hover:text-purple-800 transition font-semibold">Admin</a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}" class="bg-red-50 text-red-500 px-4 py-1.5 rounded-full hover:bg-red-100 transition text-xs">Deconnexion</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="text-gray-600 hover:text-green-700 transition">Connexion</a>
+                <a href="{{ url_for('auth.inscription') }}" class="bg-green-700 text-white px-4 py-1.5 rounded-full hover:bg-green-800 transition">Inscription</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-2xl w-full mx-auto mt-10 px-4 pb-10">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg text-sm font-medium
+                    {{ 'bg-red-50 text-red-700 border border-red-200' if category == 'error' else 'bg-green-50 text-green-700 border border-green-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="text-center text-xs text-gray-400 py-6 border-t border-gray-100 mt-10">
+        2026 <span class="logo-font font-bold text-green-600">TalibDrive</span> - Covoiturage universitaire
+    </footer>
+
+
+<script>
+function getLocation(fieldId) {
+    const status = document.getElementById(fieldId + '-status');
+    status.classList.remove('hidden');
+    status.textContent = 'Localisation en cours...';
+
+    if (!navigator.geolocation) {
+        status.textContent = 'GPS non supporte par votre navigateur.';
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+                const res = await fetch(
+                    'https://nominatim.openstreetmap.org/reverse?lat=' + latitude + '&lon=' + longitude + '&format=json'
+                );
+                const data = await res.json();
+                const address = data.address;
+                const readable =
+                    address.neighbourhood ||
+                    address.suburb ||
+                    address.quarter ||
+                    address.city_district ||
+                    address.town ||
+                    address.city ||
+                    data.display_name;
+
+                document.getElementById(fieldId).value = readable;
+                status.textContent = 'Position detectee!';
+                setTimeout(() => status.classList.add('hidden'), 2000);
+            } catch (e) {
+                status.textContent = 'Erreur lors de la recuperation de ladresse.';
+            }
+        },
+        () => {
+            status.textContent = 'Acces au GPS refuse.';
+        }
+    );
+}
+</script>
+</body>
+</html>

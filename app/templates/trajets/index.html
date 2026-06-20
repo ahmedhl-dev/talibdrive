@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Trajets disponibles</h1>
+        <p class="text-sm text-gray-400 mt-1">Tous vers <span class="text-green-700 font-medium">FSJES Mohammedia</span></p>
+    </div>
+    {% if current_user.est_conducteur %}
+    <a href="{{ url_for('trajets.proposer') }}"
+        class="bg-green-700 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-green-800 transition">
+        + Proposer un trajet
+    </a>
+    {% endif %}
+</div>
+
+{% if trajets %}
+    <div class="space-y-4">
+        {% for trajet in trajets %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                        <span>{{ trajet.depart }}</span>
+                        <span class="text-green-600">→</span>
+                        <span class="text-green-700">FSJES Mohammedia</span>
+                    </div>
+                    <div class="text-sm text-gray-400 mt-1">
+                        📅 {{ trajet.date }} à {{ trajet.heure }}
+                        &nbsp;·&nbsp;
+                        🔁 {{ "Quotidien" if trajet.recurrence == "quotidien" else "Unique" }}
+                    </div>
+                    <div class="text-sm text-gray-500 mt-1">
+                        👤 {{ trajet.conducteur.prenom }} {{ trajet.conducteur.nom }}
+                        {% if trajet.conducteur.vehicule %}
+                            &nbsp;·&nbsp; 🚗 {{ trajet.conducteur.vehicule }}
+                        {% endif %}
+                        {% if trajet.conducteur.telephone %}
+                            &nbsp;·&nbsp; 📞 <a href="tel:{{ trajet.conducteur.telephone }}"
+                                class="text-green-700 font-medium hover:underline">{{ trajet.conducteur.telephone }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-right flex flex-col items-end gap-2">
+                    <span class="inline-block bg-green-50 text-green-700 text-sm font-semibold px-3 py-1 rounded-full">
+                        {% if trajet.recurrence == 'quotidien' %}
+                            {{ trajet.places_disponibles }} place(s)/jour
+                        {% else %}
+                            {{ trajet.places_disponibles }} place(s)
+                        {% endif %}
+                    </span>
+
+                    {% if trajet.conducteur_id == current_user.id %}
+                        {% set pending = trajet.reservations | selectattr("statut", "equalto", "en_attente") | list %}
+                        <a href="{{ url_for('trajets.detail', trajet_id=trajet.id) }}"
+                            class="flex items-center gap-2 text-sm font-medium transition
+                            {% if pending %} text-yellow-600 hover:text-yellow-700 {% else %} text-gray-400 hover:text-green-700 {% endif %}">
+                            {% if pending %}
+                                <span class="bg-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ pending|length }}</span>
+                                en attente
+                            {% else %}
+                                Voir le trajet →
+                            {% endif %}
+                        </a>
+                    {% elif trajet.places_disponibles > 0 %}
+                        <a href="{{ url_for('reservations.reserver', trajet_id=trajet.id) }}"
+                            class="bg-green-700 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-800 transition">
+                            Reserver
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-20 text-gray-400">
+        <div class="text-5xl mb-4">🚗</div>
+        <p class="text-lg font-medium">Aucun trajet disponible pour le moment.</p>
+        {% if current_user.est_conducteur %}
+        <a href="{{ url_for('trajets.proposer') }}" class="text-green-700 font-semibold hover:underline mt-2 inline-block">
+            Proposez le premier trajet !
+        </a>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}

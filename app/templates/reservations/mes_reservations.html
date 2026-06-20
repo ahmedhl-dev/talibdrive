@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Mes reservations</h1>
+
+<div class="bg-green-700 text-white rounded-2xl p-6 mb-8 flex items-center justify-between shadow">
+    <div>
+        <p class="text-sm font-medium opacity-80">Votre impact environnemental</p>
+        <p class="text-3xl font-bold mt-1">{{ co2_economise }} kg</p>
+        <p class="text-sm opacity-70 mt-1">de CO2 economise grace au covoiturage</p>
+    </div>
+    <div class="text-6xl">🌿</div>
+</div>
+
+{% if current_user.est_conducteur and demandes %}
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">📋 Demandes recues sur mes trajets</h2>
+    <div class="space-y-3">
+        {% for res in demandes %}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex justify-between items-center">
+            <div>
+                <div class="font-semibold text-gray-800">
+                    {{ res.trajet.depart }} → <span class="text-green-700">FSJES Mohammedia</span>
+                </div>
+                <div class="text-sm text-gray-400 mt-1">
+                    👤 {{ res.passager.prenom }} {{ res.passager.nom }}
+                    &nbsp;·&nbsp;
+                    📅 {{ res.date_specifique if res.date_specifique else res.trajet.date }} a {{ res.trajet.heure }}
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if res.statut == "en_attente" %}
+                    <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='confirmer') }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="bg-green-700 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-800 transition">Confirmer</button>
+                </form>
+                    <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='refuser') }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm hover:bg-red-200 transition">Refuser</button>
+                </form>
+                {% elif res.statut == "confirmee" %}
+                    <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Confirmee</span>
+                {% elif res.statut == "refusee" %}
+                    <span class="bg-red-50 text-red-600 px-3 py-1 rounded-full text-sm font-medium">Refusee</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if current_user.est_conducteur and logs %}
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">🗂️ Activite recente</h2>
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+        {% for entry in logs %}
+        <div class="px-5 py-3 flex items-start gap-3">
+            <span class="text-lg mt-0.5">{{ entry.emoji }}</span>
+            <div>
+                <p class="text-sm text-gray-700">{{ entry.message }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ entry.timestamp.strftime('%d/%m/%Y a %H:%M') }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div>
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">🎒 Mes demandes de reservation</h2>
+    {% if mes_res %}
+    <div class="space-y-3">
+        {% for res in mes_res %}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex justify-between items-center">
+            <div>
+                <div class="font-semibold text-gray-800">
+                    {{ res.trajet.depart }} → <span class="text-green-700">FSJES Mohammedia</span>
+                </div>
+                <div class="text-sm text-gray-400 mt-1">
+                    📅 {{ res.date_specifique if res.date_specifique else res.trajet.date }} a {{ res.trajet.heure }}
+                    &nbsp;·&nbsp;
+                    👤 {{ res.trajet.conducteur.prenom }} {{ res.trajet.conducteur.nom }}
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if res.statut == "en_attente" %}
+                    <span class="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">En attente</span>
+                {% elif res.statut == "confirmee" %}
+                    <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Confirmee</span>
+                {% elif res.statut == "refusee" %}
+                    <span class="bg-red-50 text-red-600 px-3 py-1 rounded-full text-sm font-medium">Refusee</span>
+                {% endif %}
+                {% if res.statut != "refusee" %}
+                <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='annuler') }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 text-sm transition">Annuler</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="text-center py-16 text-gray-400">
+            <div class="text-5xl mb-4">🎒</div>
+            <p>Vous n'avez pas encore de reservations.</p>
+            <a href="{{ url_for('trajets.index') }}" class="text-green-700 font-semibold hover:underline mt-2 inline-block">
+                Voir les trajets disponibles
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

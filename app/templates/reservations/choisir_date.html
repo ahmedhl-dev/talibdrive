@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-2xl shadow-lg p-10 max-w-lg mx-auto mt-6">
+    <div class="text-center mb-8">
+        <div class="text-5xl mb-3">📅</div>
+        <h2 class="text-2xl font-bold text-gray-800">Choisir une periode</h2>
+        <p class="text-gray-400 text-sm mt-1">
+            {{ trajet.depart }} → <span class="text-green-700 font-medium">FSJES Mohammedia</span>
+            &nbsp;·&nbsp; {{ trajet.heure }}
+        </p>
+    </div>
+
+    <div class="mb-8">
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Disponibilites cette semaine</h3>
+        <div class="grid grid-cols-5 gap-2">
+            {% for day in week_days %}
+            {% set confirmed_count = confirmed_per_day.get(day.iso, 0) %}
+            {% set pending_count = pending_per_day.get(day.iso, 0) %}
+            {% set restantes = trajet.places_disponibles - confirmed_count %}
+            <div class="rounded-xl border p-3 text-center
+                {% if day.is_past %} bg-gray-50 border-gray-100 opacity-50
+                {% elif restantes <= 0 %} bg-red-50 border-red-200
+                {% elif restantes <= 1 %} bg-yellow-50 border-yellow-200
+                {% else %} bg-green-50 border-green-100 {% endif %}">
+                <p class="text-xs font-bold text-gray-500 uppercase">{{ day.label }}</p>
+                <p class="text-xs text-gray-400">{{ day.date }}</p>
+                <div class="mt-2">
+                    {% if day.is_past %}
+                        <span class="text-gray-300 text-xs">—</span>
+                    {% elif restantes <= 0 %}
+                        <span class="text-red-500 font-bold text-xs">Complet</span>
+                    {% else %}
+                        <span class="font-bold text-lg
+                            {% if restantes <= 1 %} text-yellow-600
+                            {% else %} text-green-700 {% endif %}">
+                            {{ restantes }}
+                        </span>
+                        <p class="text-xs text-gray-400 leading-tight">place(s)</p>
+                    {% endif %}
+                </div>
+                {% if pending_count > 0 and not day.is_past %}
+                <div class="mt-1">
+                    <span class="bg-yellow-400 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        +{{ pending_count }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <p class="text-xs text-gray-400 mt-2">⚠️ Les places en attente de confirmation sont incluses dans le calcul.</p>
+    </div>
+
+    <form method="POST" class="space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date de debut</label>
+                <input type="date" name="date_debut" required min="{{ today }}"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                <input type="date" name="date_fin" required min="{{ today }}"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
+            </div>
+        </div>
+        <div class="bg-green-50 border border-green-100 rounded-xl p-4 text-sm text-green-700 space-y-1">
+            <p>📅 Seuls les jours ouvrables (lun-ven) seront reserves.</p>
+            <p>⚠️ Les jours complets seront automatiquement ignores.</p>
+            <p>🔒 Annulation possible jusqu'a <strong>2h avant</strong> le depart.</p>
+        </div>
+        <button type="submit"
+            class="w-full bg-green-700 text-white py-2.5 rounded-xl hover:bg-green-800 transition font-semibold text-sm">
+            Confirmer la reservation
+        </button>
+    </form>
+</div>
+{% endblock %}

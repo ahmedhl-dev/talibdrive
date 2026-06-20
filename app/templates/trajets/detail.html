@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="{{ url_for('trajets.index') }}" class="text-sm text-gray-400 hover:text-green-700 transition mb-6 inline-block">
+    ← Retour aux trajets
+</a>
+
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <div class="flex items-center gap-2 text-xl font-bold text-gray-800">
+                <span>{{ trajet.depart }}</span>
+                <span class="text-green-600">→</span>
+                <span class="text-green-700">FSJES Mohammedia</span>
+            </div>
+            <div class="text-sm text-gray-400 mt-1">
+                📅 {{ trajet.date }} à {{ trajet.heure }}
+                &nbsp;·&nbsp;
+                🔁 {{ "Quotidien" if trajet.recurrence == "quotidien" else "Unique" }}
+                &nbsp;·&nbsp;
+                🚗 {{ trajet.conducteur.vehicule or "Vehicule non specifie" }}
+            </div>
+        </div>
+        <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+            {{ trajet.places_disponibles }} place(s)/jour
+        </span>
+    </div>
+</div>
+
+{% if trajet.recurrence == "quotidien" %}
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">📆 Disponibilites cette semaine</h2>
+    <div class="grid grid-cols-5 gap-3 mb-1">
+        {% for day in week_days %}
+        {% set confirmed_count = confirmed_per_day.get(day.iso, 0) %}
+        {% set pending_count = pending_per_day.get(day.iso, 0) %}
+        {% set restantes = trajet.places_disponibles - confirmed_count %}
+        <div class="bg-white rounded-2xl border p-4 text-center
+            {% if restantes <= 0 %} border-red-200 bg-red-50
+            {% elif restantes <= 1 %} border-yellow-200 bg-yellow-50
+            {% else %} border-gray-100 {% endif %}">
+            <p class="text-xs font-semibold text-gray-400 uppercase">{{ day.label }}</p>
+            <p class="text-sm font-bold text-gray-700 mt-0.5">{{ day.date }}</p>
+            <div class="mt-3">
+                {% if restantes <= 0 %}
+                    <span class="text-red-500 font-bold text-lg">Complet</span>
+                {% else %}
+                    <span class="text-green-700 font-bold text-2xl">{{ restantes }}</span>
+                    <p class="text-xs text-gray-400">place(s)</p>
+                {% endif %}
+            </div>
+            {% if pending_count > 0 %}
+            <div class="mt-2">
+                <span class="bg-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {{ pending_count }} en attente
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if en_attente %}
+<div class="mb-8">
+    <div class="flex items-center gap-2 mb-4">
+        <h2 class="text-lg font-semibold text-gray-700">Demandes en attente</h2>
+        <span class="bg-yellow-400 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+            {{ en_attente|length }}
+        </span>
+    </div>
+    <div class="space-y-3">
+        {% for res in en_attente %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 flex justify-between items-center">
+            <div>
+                <div class="font-semibold text-gray-800">
+                    {{ res.passager.prenom }} {{ res.passager.nom }}
+                </div>
+                <div class="text-sm text-gray-400 mt-0.5">
+                    📅 {{ res.date_specifique if res.date_specifique else trajet.date }}
+                    &nbsp;·&nbsp;
+                    🏠 {{ res.passager.zone_depart }}
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='confirmer') }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="bg-green-700 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-800 transition font-medium">✓ Confirmer</button>
+                </form>
+                <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='refuser') }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm hover:bg-red-200 transition font-medium">✗ Refuser</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="mb-8">
+    <div class="flex items-center gap-2 mb-4">
+        <h2 class="text-lg font-semibold text-gray-700">Passagers confirmes</h2>
+        <span class="bg-green-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+            {{ confirmes|length }}
+        </span>
+    </div>
+    {% if confirmes %}
+    <div class="space-y-3">
+        {% for res in confirmes %}
+        <div class="bg-white border border-gray-100 rounded-2xl p-5 flex justify-between items-center shadow-sm">
+            <div>
+                <div class="font-semibold text-gray-800">
+                    {{ res.passager.prenom }} {{ res.passager.nom }}
+                </div>
+                <div class="text-sm text-gray-400 mt-0.5">
+                    📅 {{ res.date_specifique if res.date_specifique else trajet.date }}
+                    &nbsp;·&nbsp;
+                    🏠 {{ res.passager.zone_depart }}
+                    {% if res.passager.telephone %}
+                        &nbsp;·&nbsp; 📞 {{ res.passager.telephone }}
+                    {% endif %}
+                </div>
+            </div>
+            <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                ✅ Confirme
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-10 text-gray-400">
+        <p>Aucun passager confirme pour le moment.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
