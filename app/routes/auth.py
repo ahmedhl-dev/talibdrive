@@ -12,7 +12,7 @@ EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 PHONE_REGEX = re.compile(r'^[0-9+\-\s]{8,20}$')
 
 @auth.route('/inscription', methods=['GET', 'POST'])
-@limiter.limit("10 per hour")
+@limiter.limit("20 per hour")
 def inscription():
     if request.method == 'POST':
         nom = request.form.get('nom', '').strip()
@@ -69,7 +69,7 @@ def inscription():
 
 
 @auth.route('/login', methods=['GET', 'POST'])
-@limiter.limit("15 per hour")
+@limiter.limit("30 per hour")
 def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
