@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="flex items-center justify-between mb-8">
+<div class="flex flex-wrap items-center justify-between gap-3 mb-8">
     <h1 class="text-2xl font-bold text-gray-800">⚙️ Panneau Admin</h1>
-    <div class="flex gap-4 text-sm font-medium">
+    <div class="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm font-medium">
         <span class="bg-green-50 text-green-700 px-4 py-1.5 rounded-full">👥 {{ users|length }} utilisateurs</span>
         <span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full">🚗 {{ trajets|length }} trajets</span>
         <span class="bg-yellow-50 text-yellow-700 px-4 py-1.5 rounded-full">📋 {{ reservations|length }} reservations</span>
@@ -12,8 +12,8 @@
 
 <div class="mb-10">
     <h2 class="text-lg font-semibold text-gray-700 mb-4">👥 Utilisateurs</h2>
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full text-sm">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm min-w-[600px]">
             <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
                 <tr>
                     <th class="px-5 py-3 text-left">Nom</th>
@@ -58,8 +58,8 @@
 
 <div class="mb-10">
     <h2 class="text-lg font-semibold text-gray-700 mb-4">🚗 Trajets</h2>
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full text-sm">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm min-w-[600px]">
             <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
                 <tr>
                     <th class="px-5 py-3 text-left">Trajet</th>
@@ -92,8 +92,8 @@
 
 <div class="mb-10">
     <h2 class="text-lg font-semibold text-gray-700 mb-4">📋 Reservations</h2>
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full text-sm">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm min-w-[600px]">
             <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
                 <tr>
                     <th class="px-5 py-3 text-left">Trajet</th>
