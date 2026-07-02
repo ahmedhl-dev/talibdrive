@@ -6,12 +6,14 @@
         <h2 class="text-2xl font-bold text-gray-800">Proposer un trajet</h2>
         <p class="text-gray-400 text-sm mt-1">Vers <span class="text-green-700 font-semibold">FSJES Mohammedia</span></p>
     </div>
+
     <form method="POST" class="space-y-4">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Point de depart</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Point de départ</label>
             <div class="flex gap-2">
-                <input type="text" name="depart" id="depart" required placeholder="ex: Hay Riad"
+                <input type="text" name="depart" id="depart" required placeholder="ex : Hay Riad"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
                 <button type="button" onclick="getLocation('depart')"
                     class="shrink-0 bg-green-50 text-green-700 border border-green-200 px-3 py-2 rounded-xl text-sm hover:bg-green-100 transition"
@@ -21,6 +23,7 @@
             </div>
             <p id="depart-status" class="text-xs text-gray-400 mt-1 hidden">Localisation en cours...</p>
         </div>
+
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -33,19 +36,22 @@
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
             </div>
         </div>
+
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Places disponibles</label>
-            <input type="number" name="places_disponibles" required min="1" max="8" placeholder="ex: 3"
+            <input type="number" name="places_disponibles" required min="1" max="8" placeholder="ex : 3"
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
         </div>
+
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Recurrence</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Récurrence</label>
             <select name="recurrence"
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
                 <option value="unique">Unique</option>
                 <option value="quotidien">Quotidien</option>
             </select>
         </div>
+
         <button type="submit"
             class="w-full bg-green-700 text-white py-2.5 rounded-xl hover:bg-green-800 transition font-semibold text-sm mt-2">
             Publier le trajet
