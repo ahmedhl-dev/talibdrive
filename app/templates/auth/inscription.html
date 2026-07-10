@@ -8,34 +8,49 @@
         <h2 class="text-2xl font-bold text-gray-800">Creer un compte</h2>
         <p class="text-gray-400 text-sm mt-1">Rejoignez la communaute TalibDrive</p>
     </div>
-    <form method="POST" class="space-y-4">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" class="space-y-4" id="inscription-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <input type="text" name="nom" required placeholder="Alaoui"
+                <input type="text" name="nom" required placeholder="Ex: Alaoui"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Prenom</label>
-                <input type="text" name="prenom" required placeholder="Youssef"
+                <input type="text" name="prenom" required placeholder="Ex: Youssef"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
             </div>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Email universitaire</label>
-            <input type="email" name="email" required placeholder="vous@univ.ma"
+            <input type="email" name="email" required placeholder="Ex: vous@univ.ma"
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-            <input type="password" name="mot_de_passe" required placeholder="••••••••"
+            <input type="password" name="mot_de_passe" id="mot_de_passe" required placeholder="••••••••"
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
+            <div class="mt-2">
+                <div class="flex gap-1 h-1.5">
+                    <div id="bar-1" class="flex-1 rounded-full bg-gray-200 transition-colors"></div>
+                    <div id="bar-2" class="flex-1 rounded-full bg-gray-200 transition-colors"></div>
+                    <div id="bar-3" class="flex-1 rounded-full bg-gray-200 transition-colors"></div>
+                    <div id="bar-4" class="flex-1 rounded-full bg-gray-200 transition-colors"></div>
+                </div>
+                <p id="password-feedback" class="text-xs text-gray-400 mt-1">Au moins 8 caracteres, avec majuscules, chiffres et symboles.</p>
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe</label>
+            <input type="password" name="confirmer_mot_de_passe" id="confirmer_mot_de_passe" required placeholder="••••••••"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
+            <p id="confirm-feedback" class="text-xs mt-1 hidden"></p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Zone de depart habituelle</label>
             <div class="flex gap-2">
-                <input type="text" name="zone_depart" id="zone_depart" required placeholder="ex: Hay Riad, Agdal..."
+                <input type="text" name="zone_depart" id="zone_depart" required placeholder="Ex: Hay Riad, Agdal..."
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
                 <button type="button" onclick="getLocation('zone_depart')"
                     class="shrink-0 bg-green-50 text-green-700 border border-green-200 px-3 py-2 rounded-xl text-sm hover:bg-green-100 transition"
@@ -52,16 +67,16 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Vehicule <span class="text-gray-400">(si conducteur)</span></label>
-                <input type="text" name="vehicule" placeholder="ex: Dacia Logan 2020"
+                <input type="text" name="vehicule" placeholder="Ex: Dacia Logan 2020"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Telephone <span class="text-red-400">*</span> <span class="text-gray-400">(si conducteur)</span></label>
-                <input type="tel" name="telephone" placeholder="ex: 0661234567"
+                <input type="tel" name="telephone" placeholder="Ex: 0661234567"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
             </div>
         </div>
-        <button type="submit"
+        <button type="submit" id="submit-btn"
             class="w-full bg-green-700 text-white py-2.5 rounded-xl hover:bg-green-800 transition font-semibold text-sm mt-2">
             Creer mon compte
         </button>
@@ -70,4 +85,66 @@
         <a href="{{ url_for('auth.login') }}" class="text-green-700 font-semibold hover:underline">Se connecter</a>
     </p>
 </div>
+
+<script>
+const pwdInput = document.getElementById('mot_de_passe');
+const confirmInput = document.getElementById('confirmer_mot_de_passe');
+const bars = [1,2,3,4].map(i => document.getElementById('bar-' + i));
+const feedback = document.getElementById('password-feedback');
+const confirmFeedback = document.getElementById('confirm-feedback');
+
+function checkStrength(pwd) {
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    return score;
+}
+
+const colors = ['bg-gray-200', 'bg-red-400', 'bg-yellow-400', 'bg-green-400', 'bg-green-600'];
+const messages = [
+    'Au moins 8 caracteres, avec majuscules, chiffres et symboles.',
+    'Faible — ajoutez des majuscules, chiffres ou symboles.',
+    'Moyen — essayez d\'ajouter un symbole ou un chiffre.',
+    'Bon mot de passe.',
+    'Excellent mot de passe !'
+];
+
+pwdInput.addEventListener('input', () => {
+    const score = checkStrength(pwdInput.value);
+    bars.forEach((bar, i) => {
+        bar.className = 'flex-1 rounded-full transition-colors ' + (i < score ? colors[score] : 'bg-gray-200');
+    });
+    feedback.textContent = pwdInput.value.length === 0 ? messages[0] : messages[score];
+    feedback.className = 'text-xs mt-1 ' + (score <= 1 ? 'text-red-500' : score <= 2 ? 'text-yellow-600' : 'text-green-600');
+    checkMatch();
+});
+
+function checkMatch() {
+    if (confirmInput.value.length === 0) {
+        confirmFeedback.classList.add('hidden');
+        return;
+    }
+    confirmFeedback.classList.remove('hidden');
+    if (pwdInput.value === confirmInput.value) {
+        confirmFeedback.textContent = 'Les mots de passe correspondent.';
+        confirmFeedback.className = 'text-xs mt-1 text-green-600';
+    } else {
+        confirmFeedback.textContent = 'Les mots de passe ne correspondent pas.';
+        confirmFeedback.className = 'text-xs mt-1 text-red-500';
+    }
+}
+
+confirmInput.addEventListener('input', checkMatch);
+
+document.getElementById('inscription-form').addEventListener('submit', (e) => {
+    if (pwdInput.value !== confirmInput.value) {
+        e.preventDefault();
+        confirmFeedback.textContent = 'Les mots de passe ne correspondent pas.';
+        confirmFeedback.className = 'text-xs mt-1 text-red-500';
+        confirmFeedback.classList.remove('hidden');
+    }
+});
+</script>
 {% endblock %}

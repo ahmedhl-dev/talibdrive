@@ -18,3 +18,6 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get("FLASK_ENV") == "production"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@talibdrive.com")
+    SENDER_NAME = os.environ.get("SENDER_NAME", "TalibDrive")

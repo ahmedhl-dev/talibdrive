@@ -13,6 +13,9 @@ class User(UserMixin, db.Model):
     vehicule = db.Column(db.String(100), nullable=True)
     telephone = db.Column(db.String(20), nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
+    email_verifie = db.Column(db.Boolean, default=False)
+    code_verification = db.Column(db.String(6), nullable=True)
+    code_expiration = db.Column(db.DateTime, nullable=True)
 
     trajets = db.relationship("Trajet", backref="conducteur", lazy=True)
     reservations = db.relationship("Reservation", backref="passager", lazy=True)

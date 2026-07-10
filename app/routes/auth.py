@@ -1,24 +1,30 @@
 import re
-from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_user, logout_user, login_required
+import random
+from datetime import datetime, timedelta, timezone
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session
+from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db
+from app import db, limiter
 from app.models import User
-from app import limiter
+from app.email_utils import send_verification_email
 
 auth = Blueprint('auth', __name__)
 
 EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 PHONE_REGEX = re.compile(r'^[0-9+\-\s]{8,20}$')
 
+def generate_code():
+    return str(random.randint(100000, 999999))
+
 @auth.route('/inscription', methods=['GET', 'POST'])
-@limiter.limit("20 per hour")
+@limiter.limit("10 per hour")
 def inscription():
     if request.method == 'POST':
         nom = request.form.get('nom', '').strip()
         prenom = request.form.get('prenom', '').strip()
         email = request.form.get('email', '').strip().lower()
         mot_de_passe = request.form.get('mot_de_passe', '')
+        confirmer_mot_de_passe = request.form.get('confirmer_mot_de_passe', '')
         zone_depart = request.form.get('zone_depart', '').strip()
         est_conducteur = True if request.form.get('est_conducteur') else False
         vehicule = request.form.get('vehicule', '').strip()
@@ -34,6 +40,8 @@ def inscription():
             errors.append("Email invalide.")
         if len(mot_de_passe) < 8:
             errors.append("Le mot de passe doit contenir au moins 8 caracteres.")
+        if mot_de_passe != confirmer_mot_de_passe:
+            errors.append("Les mots de passe ne correspondent pas.")
         if not zone_depart or len(zone_depart) > 100:
             errors.append("Zone de depart invalide.")
         if est_conducteur and not telephone:
@@ -53,19 +61,95 @@ def inscription():
             flash('Cet email est deja utilise.', 'error')
             return redirect(url_for('auth.inscription'))
 
+        code = generate_code()
         hashed_password = generate_password_hash(mot_de_passe)
         new_user = User(
             nom=nom, prenom=prenom, email=email,
             mot_de_passe=hashed_password, zone_depart=zone_depart,
             est_conducteur=est_conducteur, vehicule=vehicule or None,
-            telephone=telephone or None
+            telephone=telephone or None,
+            email_verifie=False,
+            code_verification=code,
+            code_expiration=datetime.now(timezone.utc) + timedelta(minutes=15)
         )
         db.session.add(new_user)
         db.session.commit()
-        flash('Compte cree avec succes!', 'success')
-        return redirect(url_for('auth.login'))
+
+        sent = send_verification_email(email, prenom, code)
+        if not sent:
+            flash("Compte cree, mais l'envoi de l'email a echoue. Contactez l'administrateur.", "error")
+
+        session['pending_verification_email'] = email
+        flash('Compte cree ! Verifiez votre email pour activer votre compte.', 'success')
+        return redirect(url_for('auth.verifier_email'))
 
     return render_template('auth/inscription.html')
+
+
+@auth.route('/verifier-email', methods=['GET', 'POST'])
+@limiter.limit("20 per hour")
+def verifier_email():
+    email = session.get('pending_verification_email')
+    if not email:
+        flash('Session expiree. Veuillez vous inscrire a nouveau.', 'error')
+        return redirect(url_for('auth.inscription'))
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash('Utilisateur introuvable.', 'error')
+        return redirect(url_for('auth.inscription'))
+
+    if user.email_verifie:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        code_entre = request.form.get('code', '').strip()
+
+        if not user.code_expiration or datetime.now(timezone.utc) > user.code_expiration.replace(tzinfo=timezone.utc):
+            flash('Le code a expire. Demandez un nouveau code.', 'error')
+            return redirect(url_for('auth.verifier_email'))
+
+        if code_entre != user.code_verification:
+            flash('Code incorrect.', 'error')
+            return redirect(url_for('auth.verifier_email'))
+
+        user.email_verifie = True
+        user.code_verification = None
+        user.code_expiration = None
+        db.session.commit()
+        session.pop('pending_verification_email', None)
+
+        login_user(user)
+        flash('Email verifie avec succes ! Bienvenue sur TalibDrive.', 'success')
+        return redirect(url_for('trajets.index'))
+
+    return render_template('auth/verifier_email.html', email=email)
+
+
+@auth.route('/renvoyer-code')
+@limiter.limit("5 per hour")
+def renvoyer_code():
+    email = session.get('pending_verification_email')
+    if not email:
+        flash('Session expiree.', 'error')
+        return redirect(url_for('auth.inscription'))
+
+    user = User.query.filter_by(email=email).first()
+    if not user or user.email_verifie:
+        return redirect(url_for('auth.login'))
+
+    code = generate_code()
+    user.code_verification = code
+    user.code_expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
+    db.session.commit()
+
+    sent = send_verification_email(email, user.prenom, code)
+    if sent:
+        flash('Un nouveau code a ete envoye.', 'success')
+    else:
+        flash("Erreur lors de l'envoi du code.", 'error')
+
+    return redirect(url_for('auth.verifier_email'))
 
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -79,6 +163,11 @@ def login():
         if not user or not check_password_hash(user.mot_de_passe, mot_de_passe):
             flash('Email ou mot de passe incorrect.', 'error')
             return redirect(url_for('auth.login'))
+
+        if not user.email_verifie:
+            session['pending_verification_email'] = user.email
+            flash('Veuillez verifier votre email avant de vous connecter.', 'error')
+            return redirect(url_for('auth.verifier_email'))
 
         login_user(user)
         return redirect(url_for('trajets.index'))
