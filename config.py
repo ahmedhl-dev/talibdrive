@@ -15,6 +15,10 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-dev-key-change-me")
     SQLALCHEMY_DATABASE_URI = get_database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+    }
     SESSION_COOKIE_SECURE = os.environ.get("FLASK_ENV") == "production"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
