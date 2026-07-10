@@ -18,7 +18,7 @@
                 &nbsp;·&nbsp;
                 🔁 {{ "Quotidien" if trajet.recurrence == "quotidien" else "Unique" }}
                 &nbsp;·&nbsp;
-                🚗 {{ trajet.conducteur.vehicule or "Vehicule non specifie" }}
+                🚗 {{ trajet.conducteur.vehicule or "Véhicule non spécifié" }}
             </div>
         </div>
         <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
@@ -29,7 +29,7 @@
 
 {% if trajet.recurrence == "quotidien" %}
 <div class="mb-8">
-    <h2 class="text-lg font-semibold text-gray-700 mb-4">📆 Disponibilites cette semaine</h2>
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">📆 Disponibilités cette semaine</h2>
     <div class="grid grid-cols-5 gap-3 mb-1">
         {% for day in week_days %}
         {% set confirmed_count = confirmed_per_day.get(day.iso, 0) %}
@@ -88,6 +88,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="bg-green-700 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-800 transition font-medium">✓ Confirmer</button>
                 </form>
+
                 <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='refuser') }}" class="inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm hover:bg-red-200 transition font-medium">✗ Refuser</button>
@@ -101,11 +102,12 @@
 
 <div class="mb-8">
     <div class="flex items-center gap-2 mb-4">
-        <h2 class="text-lg font-semibold text-gray-700">Passagers confirmes</h2>
+        <h2 class="text-lg font-semibold text-gray-700">Passagers confirmés</h2>
         <span class="bg-green-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
             {{ confirmes|length }}
         </span>
     </div>
+
     {% if confirmes %}
     <div class="space-y-3">
         {% for res in confirmes %}
@@ -124,14 +126,14 @@
                 </div>
             </div>
             <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                ✅ Confirme
+                ✅ Confirmé
             </span>
         </div>
         {% endfor %}
     </div>
     {% else %}
     <div class="text-center py-10 text-gray-400">
-        <p>Aucun passager confirme pour le moment.</p>
+        <p>Aucun passager confirmé pour le moment.</p>
     </div>
     {% endif %}
 </div>
