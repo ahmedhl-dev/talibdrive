@@ -2,20 +2,27 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import Trajet, Avis
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 trajets = Blueprint("trajets", __name__)
 
 @trajets.route("/")
 @login_required
 def index():
+    now = datetime.now(timezone.utc)
     today = date.today().isoformat()
+    now_time = now.strftime("%H:%M")
+
     tous_trajets = Trajet.query.filter(
         Trajet.places_disponibles > 0
     ).filter(
         db.or_(
             Trajet.recurrence == "quotidien",
-            Trajet.date >= today
+            Trajet.date > today,
+            db.and_(
+                Trajet.date == today,
+                Trajet.heure > now_time
+            )
         )
     ).order_by(Trajet.date, Trajet.heure).all()
 
