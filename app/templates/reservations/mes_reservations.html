@@ -34,15 +34,12 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="bg-green-700 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-800 transition">Confirmer</button>
                     </form>
-
                     <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='refuser') }}" class="inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm hover:bg-red-200 transition">Refuser</button>
                     </form>
-
                 {% elif res.statut == "confirmee" %}
                     <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Confirmée</span>
-
                 {% elif res.statut == "refusee" %}
                     <span class="bg-red-50 text-red-600 px-3 py-1 rounded-full text-sm font-medium">Refusée</span>
                 {% endif %}
@@ -70,9 +67,34 @@
 </div>
 {% endif %}
 
-<div>
-    <h2 class="text-lg font-semibold text-gray-700 mb-4">🎒 Mes demandes de réservation</h2>
+{% if a_noter %}
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">⭐ À noter</h2>
+    <div class="space-y-3">
+        {% for item in a_noter %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 flex justify-between items-center">
+            <div>
+                <div class="font-semibold text-gray-800">
+                    {{ item.res.trajet.depart }} → <span class="text-green-700">FSJES Mohammedia</span>
+                </div>
+                <div class="text-sm text-gray-500 mt-1">
+                    📅 {{ item.date_label }} à {{ item.res.trajet.heure }}
+                    &nbsp;·&nbsp;
+                    👤 {{ item.cible.prenom }} {{ item.cible.nom }}
+                </div>
+            </div>
+            <a href="{{ url_for('avis.noter', res_id=item.res.id, cible_id=item.cible.id) }}"
+               class="bg-yellow-400 hover:bg-yellow-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold transition whitespace-nowrap">
+                ⭐ Noter
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">🎒 Mes réservations à venir</h2>
     {% if mes_res %}
     <div class="space-y-3">
         {% for res in mes_res %}
@@ -87,18 +109,14 @@
                     👤 {{ res.trajet.conducteur.prenom }} {{ res.trajet.conducteur.nom }}
                 </div>
             </div>
-
             <div class="flex items-center gap-3">
                 {% if res.statut == "en_attente" %}
                     <span class="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium">En attente</span>
-
                 {% elif res.statut == "confirmee" %}
                     <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Confirmée</span>
-
                 {% elif res.statut == "refusee" %}
                     <span class="bg-red-50 text-red-600 px-3 py-1 rounded-full text-sm font-medium">Refusée</span>
                 {% endif %}
-
                 {% if res.statut != "refusee" %}
                 <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='annuler') }}" class="inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -109,7 +127,6 @@
         </div>
         {% endfor %}
     </div>
-
     {% else %}
         <div class="text-center py-16 text-gray-400">
             <div class="text-5xl mb-4">🎒</div>

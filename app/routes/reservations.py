@@ -181,17 +181,30 @@ def reserver(trajet_id):
 @login_required
 def mes_reservations():
     today_str = date_type.today().isoformat()
+    now = datetime.now(timezone.utc)
 
-    mes_res_raw = Reservation.query.filter_by(passager_id=current_user.id).all()
+    all_my_res = Reservation.query.filter_by(passager_id=current_user.id).all()
 
     mes_res = []
-    for r in mes_res_raw:
-        if r.date_specifique:
-            if r.date_specifique >= today_str:
-                mes_res.append(r)
-        else:
-            if r.trajet.date >= today_str:
-                mes_res.append(r)
+    a_noter = []
+
+    for r in all_my_res:
+        date_label = r.date_specifique if r.date_specifique else r.trajet.date
+        trip_dt = get_trip_datetime(r.trajet, r.date_specifique)
+        is_past = trip_dt and trip_dt < now
+
+        if not is_past:
+            mes_res.append(r)
+        elif r.statut == "confirmee":
+            already_rated = Avis.query.filter_by(
+                reservation_id=r.id, auteur_id=current_user.id
+            ).first()
+            if not already_rated:
+                a_noter.append({
+                    "res": r,
+                    "cible": r.trajet.conducteur,
+                    "date_label": date_label
+                })
 
     demandes = []
     logs = []
@@ -199,20 +212,33 @@ def mes_reservations():
     if current_user.est_conducteur:
         for trajet in current_user.trajets:
             for res in trajet.reservations:
-                if res.date_specifique:
-                    if res.date_specifique >= today_str:
-                        demandes.append(res)
-                else:
-                    if res.trajet.date >= today_str:
-                        demandes.append(res)
+                date_label = res.date_specifique if res.date_specifique else res.trajet.date
+                trip_dt = get_trip_datetime(trajet, res.date_specifique)
+                is_past = trip_dt and trip_dt < now
+                if not is_past:
+                    demandes.append(res)
+                elif res.statut == "confirmee":
+                    already_rated = Avis.query.filter_by(
+                        reservation_id=res.id, auteur_id=current_user.id
+                    ).first()
+                    if not already_rated:
+                        a_noter.append({
+                            "res": res,
+                            "cible": res.passager,
+                            "date_label": date_label
+                        })
             for entry in sorted(trajet.logs, key=lambda x: x.timestamp, reverse=True):
                 logs.append(entry)
 
-    confirmed = [r for r in mes_res_raw if r.statut == "confirmee"]
+    confirmed = [r for r in all_my_res if r.statut == "confirmee"]
     co2_economise = round(len(confirmed) * 20 * 0.21, 2)
 
     return render_template("reservations/mes_reservations.html",
-        mes_res=mes_res, demandes=demandes, logs=logs, co2_economise=co2_economise
+        mes_res=mes_res,
+        demandes=demandes,
+        logs=logs,
+        co2_economise=co2_economise,
+        a_noter=a_noter
     )
 
 

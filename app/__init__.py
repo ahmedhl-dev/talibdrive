@@ -5,11 +5,16 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate
+import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
-limiter = Limiter(key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+)
 migrate = Migrate()
 
 def create_app():
@@ -19,7 +24,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
-    limiter.init_app(app, storage_uri=app.config["RATELIMIT_STORAGE_URI"])
+    limiter.init_app(app)
     migrate.init_app(app, db)
     login_manager.login_view = "auth.login"
 
