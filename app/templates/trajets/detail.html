@@ -21,9 +21,19 @@
                 🚗 {{ trajet.conducteur.vehicule or "Véhicule non spécifié" }}
             </div>
         </div>
-        <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-            {{ trajet.places_disponibles }} place(s)/jour
-        </span>
+        <div class="flex flex-col items-end gap-2">
+            <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                {{ trajet.places_disponibles }} place(s)/jour
+            </span>
+            <form method="POST" action="{{ url_for('trajets.terminer', trajet_id=trajet.id) }}"
+                onsubmit="return confirm('Terminer ce trajet ? Il disparaîtra de la liste.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                    class="bg-red-50 text-red-500 px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-red-100 transition">
+                    ⏹ Terminer le trajet
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -88,7 +98,6 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="bg-green-700 text-white px-4 py-1.5 rounded-full text-sm hover:bg-green-800 transition font-medium">✓ Confirmer</button>
                 </form>
-
                 <form method="POST" action="{{ url_for('reservations.action_reservation', res_id=res.id, action='refuser') }}" class="inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="bg-red-100 text-red-600 px-4 py-1.5 rounded-full text-sm hover:bg-red-200 transition font-medium">✗ Refuser</button>
@@ -107,7 +116,6 @@
             {{ confirmes|length }}
         </span>
     </div>
-
     {% if confirmes %}
     <div class="space-y-3">
         {% for res in confirmes %}

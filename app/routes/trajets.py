@@ -148,3 +148,21 @@ def detail(trajet_id):
         confirmed_per_day=confirmed_per_day,
         pending_per_day=pending_per_day
     )
+
+
+@trajets.route("/trajet/<int:trajet_id>/terminer", methods=["POST"])
+@login_required
+def terminer(trajet_id):
+    trajet = Trajet.query.get_or_404(trajet_id)
+    if trajet.conducteur_id != current_user.id:
+        flash("Accès refusé.", "error")
+        return redirect(url_for("trajets.index"))
+
+    trajet.places_disponibles = 0
+    if trajet.recurrence == "quotidien":
+        trajet.recurrence = "unique"
+        trajet.date = date.today().isoformat()
+
+    db.session.commit()
+    flash("Trajet terminé — il n'apparaîtra plus dans la liste.", "success")
+    return redirect(url_for("trajets.index"))
