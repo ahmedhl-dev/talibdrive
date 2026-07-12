@@ -55,6 +55,8 @@
                     </a>
                 {% endif %}
 
+                <a href="{{ url_for('auth.profil') }}" class="text-gray-600 hover:text-green-700 transition">Profil</a>
+
                 {% if current_user.is_admin %}
                 <a href="{{ url_for('admin.index') }}" class="text-purple-600 hover:text-purple-800 transition font-semibold">Admin</a>
                 {% endif %}
@@ -78,6 +80,8 @@
         <span class="text-gray-400">Bonjour, <span class="text-green-700 font-semibold">{{ current_user.prenom }}</span></span>
         <a href="{{ url_for('trajets.index') }}" class="text-gray-600">Trajets</a>
         <a href="{{ url_for('reservations.mes_reservations') }}" class="text-gray-600">Mes réservations</a>
+        <a href="{{ url_for('auth.profil') }}" class="text-gray-600">Profil</a>
+
         {% if current_user.is_admin %}
         <a href="{{ url_for('admin.index') }}" class="text-purple-600 font-semibold">Admin</a>
         {% endif %}
