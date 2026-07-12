@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import User, Trajet, Reservation, TrajetLog
+from app.models import User, Trajet, Reservation, TrajetLog, Avis
 from werkzeug.security import generate_password_hash
 from flask import request
 from functools import wraps
@@ -24,7 +24,8 @@ def index():
     users = User.query.all()
     trajets = Trajet.query.all()
     reservations = Reservation.query.all()
-    return render_template("admin/index.html", users=users, trajets=trajets, reservations=reservations)
+    avis_signales = Avis.query.filter(Avis.note <= 2).order_by(Avis.created_at.desc()).all()
+    return render_template("admin/index.html", users=users, trajets=trajets, reservations=reservations, avis_signales=avis_signales)
 
 @admin.route("/supprimer/user/<int:user_id>", methods=["POST"])
 @login_required

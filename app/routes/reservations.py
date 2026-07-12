@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 from app import db
-from app.models import Reservation, Trajet, TrajetLog
+from app.models import Reservation, Trajet, TrajetLog, Avis
 from datetime import datetime, timezone, timedelta, date as date_type
 
 reservations = Blueprint("reservations", __name__)

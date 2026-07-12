@@ -6,7 +6,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, limiter
 from app.models import User
-from app.email_utils import send_verification_email
+from app.email_utils import send_verification_email, send_reset_email
+from werkzeug.security import generate_password_hash as _gph
 
 auth = Blueprint('auth', __name__)
 
@@ -180,3 +181,98 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+
+@auth.route('/mot-de-passe-oublie', methods=['GET', 'POST'])
+@limiter.limit("10 per hour")
+def mot_de_passe_oublie():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            code = generate_code()
+            user.reset_code = code
+            user.reset_code_expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
+            db.session.commit()
+            send_reset_email(user.email, user.prenom, code)
+
+        session['pending_reset_email'] = email
+        flash("Si ce compte existe, un code de reinitialisation a ete envoye.", "success")
+        return redirect(url_for('auth.reinitialiser_mot_de_passe'))
+
+    return render_template('auth/mot_de_passe_oublie.html')
+
+
+@auth.route('/reinitialiser-mot-de-passe', methods=['GET', 'POST'])
+@limiter.limit("15 per hour")
+def reinitialiser_mot_de_passe():
+    email = session.get('pending_reset_email')
+    if not email:
+        flash('Session expiree. Recommencez.', 'error')
+        return redirect(url_for('auth.mot_de_passe_oublie'))
+
+    if request.method == 'POST':
+        code_entre = request.form.get('code', '').strip()
+        nouveau_mdp = request.form.get('nouveau_mdp', '')
+        confirmer_mdp = request.form.get('confirmer_mdp', '')
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash('Utilisateur introuvable.', 'error')
+            return redirect(url_for('auth.mot_de_passe_oublie'))
+
+        if not user.reset_code_expiration or datetime.now(timezone.utc) > user.reset_code_expiration.replace(tzinfo=timezone.utc):
+            flash('Le code a expire. Demandez un nouveau code.', 'error')
+            return redirect(url_for('auth.mot_de_passe_oublie'))
+
+        if code_entre != user.reset_code:
+            flash('Code incorrect.', 'error')
+            return redirect(url_for('auth.reinitialiser_mot_de_passe'))
+
+        if len(nouveau_mdp) < 8:
+            flash('Le mot de passe doit contenir au moins 8 caracteres.', 'error')
+            return redirect(url_for('auth.reinitialiser_mot_de_passe'))
+
+        if nouveau_mdp != confirmer_mdp:
+            flash('Les mots de passe ne correspondent pas.', 'error')
+            return redirect(url_for('auth.reinitialiser_mot_de_passe'))
+
+        user.mot_de_passe = _gph(nouveau_mdp)
+        user.reset_code = None
+        user.reset_code_expiration = None
+        db.session.commit()
+        session.pop('pending_reset_email', None)
+
+        flash('Mot de passe reinitialise avec succes. Connectez-vous.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/reinitialiser_mot_de_passe.html', email=email)
+
+
+@auth.route('/profil', methods=['GET', 'POST'])
+@login_required
+def profil():
+    if request.method == 'POST':
+        mdp_actuel = request.form.get('mdp_actuel', '')
+        nouveau_mdp = request.form.get('nouveau_mdp', '')
+        confirmer_mdp = request.form.get('confirmer_mdp', '')
+
+        if not check_password_hash(current_user.mot_de_passe, mdp_actuel):
+            flash('Mot de passe actuel incorrect.', 'error')
+            return redirect(url_for('auth.profil'))
+
+        if len(nouveau_mdp) < 8:
+            flash('Le nouveau mot de passe doit contenir au moins 8 caracteres.', 'error')
+            return redirect(url_for('auth.profil'))
+
+        if nouveau_mdp != confirmer_mdp:
+            flash('Les mots de passe ne correspondent pas.', 'error')
+            return redirect(url_for('auth.profil'))
+
+        current_user.mot_de_passe = generate_password_hash(nouveau_mdp)
+        db.session.commit()
+        flash('Mot de passe modifie avec succes.', 'success')
+        return redirect(url_for('auth.profil'))
+
+    return render_template('auth/profil.html')

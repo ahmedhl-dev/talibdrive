@@ -1,4 +1,39 @@
 {% extends "base.html" %}
+{% block container_class %}max-w-6xl<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">🚩 Avis signales (note ≤ 2)</h2>
+    {% if avis_signales %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm min-w-[700px]">
+            <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                <tr>
+                    <th class="px-5 py-3 text-left">Auteur</th>
+                    <th class="px-5 py-3 text-left">Cible</th>
+                    <th class="px-5 py-3 text-left">Note</th>
+                    <th class="px-5 py-3 text-left">Commentaire</th>
+                    <th class="px-5 py-3 text-left">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for a in avis_signales %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-5 py-3 font-medium text-gray-800">{{ a.auteur.prenom }} {{ a.auteur.nom }}</td>
+                    <td class="px-5 py-3 text-gray-500">{{ a.cible.prenom }} {{ a.cible.nom }}</td>
+                    <td class="px-5 py-3">
+                        <span class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">{{ a.note }}/5</span>
+                    </td>
+                    <td class="px-5 py-3 text-gray-500">{{ a.commentaire or "-" }}</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">{{ a.created_at.strftime('%d/%m/%Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm">Aucun avis signale pour le moment.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
 {% block content %}
 
 <div class="flex flex-wrap items-center justify-between gap-3 mb-8">
@@ -128,6 +163,40 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">🚩 Avis signales (note ≤ 2)</h2>
+    {% if avis_signales %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="w-full text-sm min-w-[700px]">
+            <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                <tr>
+                    <th class="px-5 py-3 text-left">Auteur</th>
+                    <th class="px-5 py-3 text-left">Cible</th>
+                    <th class="px-5 py-3 text-left">Note</th>
+                    <th class="px-5 py-3 text-left">Commentaire</th>
+                    <th class="px-5 py-3 text-left">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for a in avis_signales %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-5 py-3 font-medium text-gray-800">{{ a.auteur.prenom }} {{ a.auteur.nom }}</td>
+                    <td class="px-5 py-3 text-gray-500">{{ a.cible.prenom }} {{ a.cible.nom }}</td>
+                    <td class="px-5 py-3">
+                        <span class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">{{ a.note }}/5</span>
+                    </td>
+                    <td class="px-5 py-3 text-gray-500">{{ a.commentaire or "-" }}</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">{{ a.created_at.strftime('%d/%m/%Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm">Aucun avis signale pour le moment.</p>
+    {% endif %}
 </div>
 
 {% endblock %}

@@ -34,6 +34,9 @@
 
                     <div class="text-sm text-gray-500 mt-1">
                         👤 {{ trajet.conducteur.prenom }} {{ trajet.conducteur.nom }}
+                        {% if ratings.get(trajet.conducteur_id) %}
+                            &nbsp;·&nbsp; ⭐ {{ ratings[trajet.conducteur_id].avg }} ({{ ratings[trajet.conducteur_id].count }})
+                        {% endif %}
                         {% if trajet.conducteur.vehicule %}
                             &nbsp;·&nbsp; 🚗 {{ trajet.conducteur.vehicule }}
                         {% endif %}

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import Trajet
+from app.models import Trajet, Avis
 from datetime import date, datetime, timedelta
 
 trajets = Blueprint("trajets", __name__)
@@ -18,7 +18,15 @@ def index():
             Trajet.date >= today
         )
     ).order_by(Trajet.date, Trajet.heure).all()
-    return render_template("trajets/index.html", trajets=tous_trajets)
+
+    ratings = {}
+    for trajet in tous_trajets:
+        avis_list = Avis.query.filter_by(cible_id=trajet.conducteur_id).all()
+        if avis_list:
+            avg = sum(a.note for a in avis_list) / len(avis_list)
+            ratings[trajet.conducteur_id] = {"avg": round(avg, 1), "count": len(avis_list)}
+
+    return render_template("trajets/index.html", trajets=tous_trajets, ratings=ratings)
 
 
 @trajets.route("/proposer", methods=["GET", "POST"])

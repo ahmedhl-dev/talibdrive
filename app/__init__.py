@@ -27,11 +27,13 @@ def create_app():
     from app.routes.trajets import trajets
     from app.routes.reservations import reservations
     from app.routes.admin import admin
+    from app.routes.avis import avis
 
     app.register_blueprint(auth)
     app.register_blueprint(trajets)
     app.register_blueprint(reservations)
     app.register_blueprint(admin)
+    app.register_blueprint(avis)
 
     with app.app_context():
         from app import models

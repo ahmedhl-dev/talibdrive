@@ -11,6 +11,7 @@ def app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     app.config["WTF_CSRF_ENABLED"] = False
     app.config["RATELIMIT_ENABLED"] = False
+    app.config["BREVO_API_KEY"] = None  # disable real email sending during tests
     with app.app_context():
         db.create_all()
         yield app
@@ -28,7 +29,8 @@ def create_user(email, est_conducteur=False, telephone=None):
         zone_depart="Mohammedia",
         est_conducteur=est_conducteur,
         vehicule="Dacia" if est_conducteur else None,
-        telephone=telephone
+        telephone=telephone,
+        email_verifie=True
     )
     db.session.add(u)
     db.session.flush()
@@ -70,6 +72,7 @@ def test_inscription(client, app):
             "nom": "Alaoui", "prenom": "Youssef",
             "email": "youssef@univ.ma",
             "mot_de_passe": "test1234",
+            "confirmer_mot_de_passe": "test1234",
             "zone_depart": "Mohammedia"
         }, follow_redirects=True)
         assert res.status_code == 200
@@ -93,6 +96,7 @@ def test_conducteur_requires_telephone(client, app):
             "nom": "A", "prenom": "B",
             "email": "driver@univ.ma",
             "mot_de_passe": "test1234",
+            "confirmer_mot_de_passe": "test1234",
             "zone_depart": "Mohammedia",
             "est_conducteur": "on",
             "telephone": ""

@@ -16,6 +16,11 @@ class User(UserMixin, db.Model):
     email_verifie = db.Column(db.Boolean, default=False)
     code_verification = db.Column(db.String(6), nullable=True)
     code_expiration = db.Column(db.DateTime, nullable=True)
+    reset_code = db.Column(db.String(6), nullable=True)
+    reset_code_expiration = db.Column(db.DateTime, nullable=True)
+
+    avis_donnes = db.relationship("Avis", foreign_keys="Avis.auteur_id", backref="auteur", lazy=True)
+    avis_recus = db.relationship("Avis", foreign_keys="Avis.cible_id", backref="cible", lazy=True)
 
     trajets = db.relationship("Trajet", backref="conducteur", lazy=True)
     reservations = db.relationship("Reservation", backref="passager", lazy=True)
@@ -50,3 +55,15 @@ class TrajetLog(db.Model):
     message = db.Column(db.String(300), nullable=False)
     emoji = db.Column(db.String(10), nullable=False, default="📋")
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class Avis(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reservation_id = db.Column(db.Integer, db.ForeignKey("reservation.id"), nullable=False)
+    trajet_id = db.Column(db.Integer, db.ForeignKey("trajet.id"), nullable=False)
+    auteur_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    cible_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    note = db.Column(db.Integer, nullable=False)
+    commentaire = db.Column(db.String(500), nullable=True)
+    tags = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
