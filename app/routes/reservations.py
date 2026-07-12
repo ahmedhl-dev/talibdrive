@@ -13,8 +13,8 @@ def log(trajet_id, emoji, message):
 def get_trip_datetime(trajet, date_specifique=None):
     date_str = date_specifique if date_specifique else trajet.date
     try:
-        return datetime.strptime(f"{date_str} {trajet.heure}", "%Y-%m-%d %H:%M")
-    except:
+        return datetime.strptime(f"{date_str} {trajet.heure}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
         return None
 
 def places_restantes_pour_date(trajet, date_str):
@@ -30,7 +30,7 @@ def get_weekdays_in_range(start_str, end_str):
     try:
         start = datetime.strptime(start_str, "%Y-%m-%d").date()
         end = datetime.strptime(end_str, "%Y-%m-%d").date()
-    except:
+    except (ValueError, TypeError):
         return []
     if start > end:
         return []
@@ -51,7 +51,7 @@ def reserver(trajet_id):
     trajet = Trajet.query.get_or_404(trajet_id)
 
     if trajet.conducteur_id == current_user.id:
-        flash("Vous ne pouvez pas reserver votre propre trajet.", "error")
+        flash("Vous ne pouvez pas réserver votre propre trajet.", "error")
         return redirect(url_for("trajets.index"))
 
     if trajet.recurrence == "unique" and trajet.places_disponibles <= 0:
@@ -62,7 +62,7 @@ def reserver(trajet_id):
         today = date_type.today()
         try:
             start = max(datetime.strptime(trajet.date, "%Y-%m-%d").date(), today)
-        except:
+        except (ValueError, TypeError):
             start = today
         day_names = ["Lun", "Mar", "Mer", "Jeu", "Ven"]
         week_days = []
@@ -98,7 +98,7 @@ def reserver(trajet_id):
             passager_id=current_user.id, trajet_id=trajet_id
         ).first()
         if existing:
-            flash("Vous avez deja une reservation pour ce trajet.", "error")
+            flash("Vous avez déjà une réservation pour ce trajet.", "error")
             return redirect(url_for("trajets.index"))
 
         reservation = Reservation(
@@ -107,34 +107,33 @@ def reserver(trajet_id):
         )
         db.session.add(reservation)
         log(trajet_id, "🟡",
-            f"{current_user.prenom} {current_user.nom} a demande une place — {trajet.depart} → FSJES Mohammedia, {trajet.date} a {trajet.heure}"
+            f"{current_user.prenom} {current_user.nom} a demandé une place — {trajet.depart} → FSJES Mohammedia, {trajet.date} à {trajet.heure}"
         )
         db.session.commit()
-        flash("Demande de reservation envoyee avec succes!", "success")
+        flash("Demande de réservation envoyée avec succès !", "success")
         return redirect(url_for("trajets.index"))
 
-    # quotidien logic
     date_debut = request.form.get("date_debut", "").strip()
     date_fin = request.form.get("date_fin", "").strip()
 
     if not date_debut or not date_fin:
-        flash("Veuillez choisir une periode.", "error")
+        flash("Veuillez choisir une période.", "error")
         return redirect(url_for("reservations.reserver", trajet_id=trajet_id))
 
     today_str = date_type.today().isoformat()
 
     if date_debut < today_str:
-        flash("La date de debut ne peut pas etre dans le passe.", "error")
+        flash("La date de début ne peut pas être dans le passé.", "error")
         return redirect(url_for("reservations.reserver", trajet_id=trajet_id))
 
     if date_fin < date_debut:
-        flash("La date de fin doit etre apres la date de debut.", "error")
+        flash("La date de fin doit être après la date de début.", "error")
         return redirect(url_for("reservations.reserver", trajet_id=trajet_id))
 
     weekdays = get_weekdays_in_range(date_debut, date_fin)
 
     if not weekdays:
-        flash("Periode invalide (max 31 jours, jours ouvrables uniquement).", "error")
+        flash("Période invalide (max 31 jours, jours ouvrables uniquement).", "error")
         return redirect(url_for("reservations.reserver", trajet_id=trajet_id))
 
     booked, skipped_full, skipped_duplicate = [], [], []
@@ -161,19 +160,19 @@ def reserver(trajet_id):
 
     if booked:
         log(trajet_id, "🟡",
-            f"{current_user.prenom} {current_user.nom} a demande {len(booked)} place(s) — {trajet.depart} → FSJES Mohammedia, du {booked[0]} au {booked[-1]} a {trajet.heure}"
+            f"{current_user.prenom} {current_user.nom} a demandé {len(booked)} place(s) — {trajet.depart} → FSJES Mohammedia, du {booked[0]} au {booked[-1]} à {trajet.heure}"
         )
 
     db.session.commit()
 
     if booked:
-        flash(f"{len(booked)} reservation(s) envoyee(s) avec succes!", "success")
+        flash(f"{len(booked)} réservation(s) envoyée(s) avec succès !", "success")
     if skipped_full:
-        flash(f"{len(skipped_full)} jour(s) saute(s) car complet: {', '.join(skipped_full)}", "error")
+        flash(f"{len(skipped_full)} jour(s) sauté(s) car complet : {', '.join(skipped_full)}", "error")
     if skipped_duplicate:
-        flash(f"{len(skipped_duplicate)} jour(s) deja reserve(s): {', '.join(skipped_duplicate)}", "error")
+        flash(f"{len(skipped_duplicate)} jour(s) déjà réservé(s) : {', '.join(skipped_duplicate)}", "error")
     if not booked:
-        flash("Aucune reservation effectuee.", "error")
+        flash("Aucune réservation effectuée.", "error")
 
     return redirect(url_for("trajets.index"))
 
@@ -231,7 +230,6 @@ def action_reservation(res_id, action):
     is_owner_passager = res.passager_id == current_user.id
     is_owner_conducteur = trajet.conducteur_id == current_user.id
 
-    # explicit authorization check — reject anything that doesn't match
     if action == "annuler" and not is_owner_passager:
         abort(403)
     if action in ("confirmer", "refuser") and not is_owner_conducteur:
@@ -239,25 +237,25 @@ def action_reservation(res_id, action):
 
     if action == "annuler":
         trip_dt = get_trip_datetime(trajet, res.date_specifique)
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         if trip_dt and (trip_dt - now) < timedelta(hours=2):
             log(trajet.id, "🔒",
-                f"{current_user.prenom} {current_user.nom} a tente d'annuler trop tard — moins de 2h avant le depart ({date_label} a {trajet.heure})"
+                f"{current_user.prenom} {current_user.nom} a tenté d'annuler trop tard — moins de 2h avant le départ ({date_label} à {trajet.heure})"
             )
             db.session.commit()
-            flash("Annulation impossible — moins de 2h avant le depart.", "error")
+            flash("Annulation impossible — moins de 2h avant le départ.", "error")
             return redirect(url_for("reservations.mes_reservations"))
 
         was_confirmed = res.statut == "confirmee"
         log(trajet.id, "🔴",
-            f"{current_user.prenom} {current_user.nom} a annule sa reservation — {trajet.depart} → FSJES Mohammedia, {date_label} a {trajet.heure}"
+            f"{current_user.prenom} {current_user.nom} a annulé sa réservation — {trajet.depart} → FSJES Mohammedia, {date_label} à {trajet.heure}"
         )
         if was_confirmed and not res.date_specifique:
             trajet.places_disponibles += 1
         db.session.delete(res)
         db.session.commit()
-        flash("Reservation annulee.", "success")
+        flash("Réservation annulée.", "success")
         return redirect(url_for("reservations.mes_reservations"))
 
     elif action == "confirmer":
@@ -271,17 +269,17 @@ def action_reservation(res_id, action):
         if not res.date_specifique:
             trajet.places_disponibles -= 1
         log(trajet.id, "✅",
-            f"Vous avez confirme la reservation de {passager.prenom} {passager.nom} — {date_label} a {trajet.heure}"
+            f"Vous avez confirmé la réservation de {passager.prenom} {passager.nom} — {date_label} à {trajet.heure}"
         )
         db.session.commit()
-        flash("Reservation confirmee!", "success")
+        flash("Réservation confirmée !", "success")
         return redirect(url_for("trajets.detail", trajet_id=trajet.id))
 
     elif action == "refuser":
         res.statut = "refusee"
         log(trajet.id, "❌",
-            f"Vous avez refuse la reservation de {passager.prenom} {passager.nom} — {date_label} a {trajet.heure}"
+            f"Vous avez refusé la réservation de {passager.prenom} {passager.nom} — {date_label} à {trajet.heure}"
         )
         db.session.commit()
-        flash("Reservation refusee.", "success")
+        flash("Réservation refusée.", "success")
         return redirect(url_for("trajets.detail", trajet_id=trajet.id))

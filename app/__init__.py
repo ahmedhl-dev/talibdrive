@@ -1,4 +1,4 @@
-﻿from flask import Flask
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -19,7 +19,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
-    limiter.init_app(app)
+    limiter.init_app(app, storage_uri=app.config["RATELIMIT_STORAGE_URI"])
     migrate.init_app(app, db)
     login_manager.login_view = "auth.login"
 
@@ -34,10 +34,6 @@ def create_app():
     app.register_blueprint(reservations)
     app.register_blueprint(admin)
     app.register_blueprint(avis)
-
-    with app.app_context():
-        from app import models
-        db.create_all()
 
     from app.models import User
 

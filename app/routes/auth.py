@@ -7,7 +7,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, limiter
 from app.models import User
 from app.email_utils import send_verification_email, send_reset_email
-from werkzeug.security import generate_password_hash as _gph
 
 auth = Blueprint('auth', __name__)
 
@@ -36,21 +35,21 @@ def inscription():
         if not nom or len(nom) > 100:
             errors.append("Nom invalide.")
         if not prenom or len(prenom) > 100:
-            errors.append("Prenom invalide.")
+            errors.append("Prénom invalide.")
         if not EMAIL_REGEX.match(email) or len(email) > 150:
             errors.append("Email invalide.")
         if len(mot_de_passe) < 8:
-            errors.append("Le mot de passe doit contenir au moins 8 caracteres.")
+            errors.append("Le mot de passe doit contenir au moins 8 caractères.")
         if mot_de_passe != confirmer_mot_de_passe:
             errors.append("Les mots de passe ne correspondent pas.")
         if not zone_depart or len(zone_depart) > 100:
-            errors.append("Zone de depart invalide.")
+            errors.append("Zone de départ invalide.")
         if est_conducteur and not telephone:
-            errors.append("Le numero de telephone est obligatoire pour les conducteurs.")
+            errors.append("Le numéro de téléphone est obligatoire pour les conducteurs.")
         if telephone and not PHONE_REGEX.match(telephone):
-            errors.append("Numero de telephone invalide.")
+            errors.append("Numéro de téléphone invalide.")
         if vehicule and len(vehicule) > 100:
-            errors.append("Nom du vehicule trop long.")
+            errors.append("Nom du véhicule trop long.")
 
         if errors:
             for e in errors:
@@ -59,7 +58,7 @@ def inscription():
 
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            flash('Cet email est deja utilise.', 'error')
+            flash('Cet email est déjà utilisé.', 'error')
             return redirect(url_for('auth.inscription'))
 
         code = generate_code()
@@ -78,10 +77,10 @@ def inscription():
 
         sent = send_verification_email(email, prenom, code)
         if not sent:
-            flash("Compte cree, mais l'envoi de l'email a echoue. Contactez l'administrateur.", "error")
+            flash("Compte créé, mais l'envoi de l'email a échoué. Contactez l'administrateur.", "error")
 
         session['pending_verification_email'] = email
-        flash('Compte cree ! Verifiez votre email pour activer votre compte.', 'success')
+        flash('Compte créé ! Vérifiez votre email pour activer votre compte.', 'success')
         return redirect(url_for('auth.verifier_email'))
 
     return render_template('auth/inscription.html')
@@ -92,7 +91,7 @@ def inscription():
 def verifier_email():
     email = session.get('pending_verification_email')
     if not email:
-        flash('Session expiree. Veuillez vous inscrire a nouveau.', 'error')
+        flash('Session expirée. Veuillez vous inscrire à nouveau.', 'error')
         return redirect(url_for('auth.inscription'))
 
     user = User.query.filter_by(email=email).first()
@@ -107,7 +106,7 @@ def verifier_email():
         code_entre = request.form.get('code', '').strip()
 
         if not user.code_expiration or datetime.now(timezone.utc) > user.code_expiration.replace(tzinfo=timezone.utc):
-            flash('Le code a expire. Demandez un nouveau code.', 'error')
+            flash('Le code a expiré. Demandez un nouveau code.', 'error')
             return redirect(url_for('auth.verifier_email'))
 
         if code_entre != user.code_verification:
@@ -121,7 +120,7 @@ def verifier_email():
         session.pop('pending_verification_email', None)
 
         login_user(user)
-        flash('Email verifie avec succes ! Bienvenue sur TalibDrive.', 'success')
+        flash('Email vérifié avec succès ! Bienvenue sur TalibDrive.', 'success')
         return redirect(url_for('trajets.index'))
 
     return render_template('auth/verifier_email.html', email=email)
@@ -132,7 +131,7 @@ def verifier_email():
 def renvoyer_code():
     email = session.get('pending_verification_email')
     if not email:
-        flash('Session expiree.', 'error')
+        flash('Session expirée.', 'error')
         return redirect(url_for('auth.inscription'))
 
     user = User.query.filter_by(email=email).first()
@@ -146,7 +145,7 @@ def renvoyer_code():
 
     sent = send_verification_email(email, user.prenom, code)
     if sent:
-        flash('Un nouveau code a ete envoye.', 'success')
+        flash('Un nouveau code a été envoyé.', 'success')
     else:
         flash("Erreur lors de l'envoi du code.", 'error')
 
@@ -167,7 +166,7 @@ def login():
 
         if not user.email_verifie:
             session['pending_verification_email'] = user.email
-            flash('Veuillez verifier votre email avant de vous connecter.', 'error')
+            flash('Veuillez vérifier votre email avant de vous connecter.', 'error')
             return redirect(url_for('auth.verifier_email'))
 
         login_user(user)
@@ -198,7 +197,7 @@ def mot_de_passe_oublie():
             send_reset_email(user.email, user.prenom, code)
 
         session['pending_reset_email'] = email
-        flash("Si ce compte existe, un code de reinitialisation a ete envoye.", "success")
+        flash("Si ce compte existe, un code de réinitialisation a été envoyé.", "success")
         return redirect(url_for('auth.reinitialiser_mot_de_passe'))
 
     return render_template('auth/mot_de_passe_oublie.html')
@@ -209,7 +208,7 @@ def mot_de_passe_oublie():
 def reinitialiser_mot_de_passe():
     email = session.get('pending_reset_email')
     if not email:
-        flash('Session expiree. Recommencez.', 'error')
+        flash('Session expirée. Recommencez.', 'error')
         return redirect(url_for('auth.mot_de_passe_oublie'))
 
     if request.method == 'POST':
@@ -223,7 +222,7 @@ def reinitialiser_mot_de_passe():
             return redirect(url_for('auth.mot_de_passe_oublie'))
 
         if not user.reset_code_expiration or datetime.now(timezone.utc) > user.reset_code_expiration.replace(tzinfo=timezone.utc):
-            flash('Le code a expire. Demandez un nouveau code.', 'error')
+            flash('Le code a expiré. Demandez un nouveau code.', 'error')
             return redirect(url_for('auth.mot_de_passe_oublie'))
 
         if code_entre != user.reset_code:
@@ -231,20 +230,20 @@ def reinitialiser_mot_de_passe():
             return redirect(url_for('auth.reinitialiser_mot_de_passe'))
 
         if len(nouveau_mdp) < 8:
-            flash('Le mot de passe doit contenir au moins 8 caracteres.', 'error')
+            flash('Le mot de passe doit contenir au moins 8 caractères.', 'error')
             return redirect(url_for('auth.reinitialiser_mot_de_passe'))
 
         if nouveau_mdp != confirmer_mdp:
             flash('Les mots de passe ne correspondent pas.', 'error')
             return redirect(url_for('auth.reinitialiser_mot_de_passe'))
 
-        user.mot_de_passe = _gph(nouveau_mdp)
+        user.mot_de_passe = generate_password_hash(nouveau_mdp)
         user.reset_code = None
         user.reset_code_expiration = None
         db.session.commit()
         session.pop('pending_reset_email', None)
 
-        flash('Mot de passe reinitialise avec succes. Connectez-vous.', 'success')
+        flash('Mot de passe réinitialisé avec succès. Connectez-vous.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/reinitialiser_mot_de_passe.html', email=email)
@@ -263,7 +262,7 @@ def profil():
             return redirect(url_for('auth.profil'))
 
         if len(nouveau_mdp) < 8:
-            flash('Le nouveau mot de passe doit contenir au moins 8 caracteres.', 'error')
+            flash('Le nouveau mot de passe doit contenir au moins 8 caractères.', 'error')
             return redirect(url_for('auth.profil'))
 
         if nouveau_mdp != confirmer_mdp:
@@ -272,7 +271,7 @@ def profil():
 
         current_user.mot_de_passe = generate_password_hash(nouveau_mdp)
         db.session.commit()
-        flash('Mot de passe modifie avec succes.', 'success')
+        flash('Mot de passe modifié avec succès.', 'success')
         return redirect(url_for('auth.profil'))
 
     return render_template('auth/profil.html')
