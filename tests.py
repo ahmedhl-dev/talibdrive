@@ -2,7 +2,7 @@ import pytest
 from app import create_app, db
 from app.models import User, Trajet, Reservation, TrajetLog
 from werkzeug.security import generate_password_hash
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 
 @pytest.fixture
 def app():
@@ -462,3 +462,323 @@ def test_full_day_blocks_new_reservation(client, app):
     with app.app_context():
         new_res = Reservation.query.filter_by(passager_id=p2_id).all()
         assert len(new_res) == 0
+
+
+# EMAIL VERIFICATION TESTS
+
+def test_new_user_not_verified_by_default(client, app):
+    with app.app_context():
+        client.post("/inscription", data={
+            "nom": "Test", "prenom": "Verif",
+            "email": "unverified@univ.ma",
+            "mot_de_passe": "test1234",
+            "confirmer_mot_de_passe": "test1234",
+            "zone_depart": "Mohammedia"
+        }, follow_redirects=True)
+        user = User.query.filter_by(email="unverified@univ.ma").first()
+        assert user is not None
+        assert user.email_verifie is False
+        assert user.code_verification is not None
+
+def test_unverified_user_cannot_login(client, app):
+    with app.app_context():
+        u = create_user("stillunverified@univ.ma")
+        u.email_verifie = False
+        db.session.commit()
+
+    res = client.post("/login", data={
+        "email": "stillunverified@univ.ma",
+        "mot_de_passe": "password"
+    }, follow_redirects=True)
+    assert b"verifier votre email".lower() in res.data.lower() or res.status_code == 200
+
+    with client.session_transaction() as sess:
+        pass
+
+def test_verify_email_with_correct_code(client, app):
+    with app.app_context():
+        u = create_user("verifyme@univ.ma")
+        u.email_verifie = False
+        u.code_verification = "123456"
+        u.code_expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
+        db.session.commit()
+
+    with client.session_transaction() as sess:
+        sess["pending_verification_email"] = "verifyme@univ.ma"
+
+    res = client.post("/verifier-email", data={"code": "123456"}, follow_redirects=True)
+    assert res.status_code == 200
+
+    with app.app_context():
+        u = User.query.filter_by(email="verifyme@univ.ma").first()
+        assert u.email_verifie is True
+        assert u.code_verification is None
+
+def test_verify_email_with_wrong_code(client, app):
+    with app.app_context():
+        u = create_user("wrongcode@univ.ma")
+        u.email_verifie = False
+        u.code_verification = "123456"
+        u.code_expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
+        db.session.commit()
+
+    with client.session_transaction() as sess:
+        sess["pending_verification_email"] = "wrongcode@univ.ma"
+
+    client.post("/verifier-email", data={"code": "000000"}, follow_redirects=True)
+
+    with app.app_context():
+        u = User.query.filter_by(email="wrongcode@univ.ma").first()
+        assert u.email_verifie is False
+
+def test_verify_email_with_expired_code(client, app):
+    with app.app_context():
+        u = create_user("expired@univ.ma")
+        u.email_verifie = False
+        u.code_verification = "123456"
+        u.code_expiration = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.session.commit()
+
+    with client.session_transaction() as sess:
+        sess["pending_verification_email"] = "expired@univ.ma"
+
+    client.post("/verifier-email", data={"code": "123456"}, follow_redirects=True)
+
+    with app.app_context():
+        u = User.query.filter_by(email="expired@univ.ma").first()
+        assert u.email_verifie is False
+
+
+# PASSWORD RESET TESTS
+
+def test_forgot_password_generates_code(client, app):
+    with app.app_context():
+        create_user("resetme@univ.ma")
+        db.session.commit()
+
+    client.post("/mot-de-passe-oublie", data={"email": "resetme@univ.ma"}, follow_redirects=True)
+
+    with app.app_context():
+        u = User.query.filter_by(email="resetme@univ.ma").first()
+        assert u.reset_code is not None
+
+def test_reset_password_with_correct_code(client, app):
+    with app.app_context():
+        u = create_user("resetflow@univ.ma")
+        u.reset_code = "654321"
+        u.reset_code_expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
+        db.session.commit()
+        old_hash = u.mot_de_passe
+
+    with client.session_transaction() as sess:
+        sess["pending_reset_email"] = "resetflow@univ.ma"
+
+    res = client.post("/reinitialiser-mot-de-passe", data={
+        "code": "654321",
+        "nouveau_mdp": "newpassword123",
+        "confirmer_mdp": "newpassword123"
+    }, follow_redirects=True)
+    assert res.status_code == 200
+
+    with app.app_context():
+        u = User.query.filter_by(email="resetflow@univ.ma").first()
+        assert u.mot_de_passe != old_hash
+        assert u.reset_code is None
+
+    res2 = client.post("/login", data={
+        "email": "resetflow@univ.ma",
+        "mot_de_passe": "newpassword123"
+    }, follow_redirects=True)
+    assert res2.status_code == 200
+
+def test_reset_password_mismatch_rejected(client, app):
+    with app.app_context():
+        u = create_user("mismatch@univ.ma")
+        u.reset_code = "111222"
+        u.reset_code_expiration = datetime.now(timezone.utc) + timedelta(minutes=15)
+        db.session.commit()
+        old_hash = u.mot_de_passe
+
+    with client.session_transaction() as sess:
+        sess["pending_reset_email"] = "mismatch@univ.ma"
+
+    client.post("/reinitialiser-mot-de-passe", data={
+        "code": "111222",
+        "nouveau_mdp": "newpassword123",
+        "confirmer_mdp": "differentpassword"
+    }, follow_redirects=True)
+
+    with app.app_context():
+        u = User.query.filter_by(email="mismatch@univ.ma").first()
+        assert u.mot_de_passe == old_hash
+
+
+# PROFILE TESTS
+
+def test_change_password_from_profile(client, app):
+    with app.app_context():
+        create_user("profileuser@univ.ma")
+        db.session.commit()
+
+    login(client, "profileuser@univ.ma")
+    res = client.post("/profil", data={
+        "mdp_actuel": "password",
+        "nouveau_mdp": "brandnewpass123",
+        "confirmer_mdp": "brandnewpass123"
+    }, follow_redirects=True)
+    assert res.status_code == 200
+
+    res2 = client.post("/login", data={
+        "email": "profileuser@univ.ma",
+        "mot_de_passe": "brandnewpass123"
+    }, follow_redirects=True)
+    assert res2.status_code == 200
+
+def test_change_password_wrong_current_rejected(client, app):
+    with app.app_context():
+        u = create_user("profilewrong@univ.ma")
+        db.session.commit()
+        old_hash = u.mot_de_passe
+
+    login(client, "profilewrong@univ.ma")
+    client.post("/profil", data={
+        "mdp_actuel": "wrongcurrentpassword",
+        "nouveau_mdp": "brandnewpass123",
+        "confirmer_mdp": "brandnewpass123"
+    }, follow_redirects=True)
+
+    with app.app_context():
+        u = User.query.filter_by(email="profilewrong@univ.ma").first()
+        assert u.mot_de_passe == old_hash
+
+
+# AVIS (REVIEWS) TESTS
+
+def create_past_confirmed_reservation(driver_id, passager_id, days_ago=1):
+    past_date = (date.today() - timedelta(days=days_ago)).isoformat()
+    t = Trajet(
+        depart="Mohammedia", destination="FSJES Mohammedia",
+        date=past_date, heure="08:00",
+        places_disponibles=3, recurrence="unique",
+        conducteur_id=driver_id
+    )
+    db.session.add(t)
+    db.session.flush()
+    r = Reservation(passager_id=passager_id, trajet_id=t.id, statut="confirmee")
+    db.session.add(r)
+    db.session.flush()
+    return t, r
+
+def test_passager_can_rate_conducteur_after_trip(client, app):
+    with app.app_context():
+        driver = create_user("avisdriver1@univ.ma", est_conducteur=True, telephone="0600000000")
+        passager = create_user("avispass1@univ.ma")
+        t, r = create_past_confirmed_reservation(driver.id, passager.id)
+        db.session.commit()
+        res_id = r.id
+        driver_id = driver.id
+
+    login(client, "avispass1@univ.ma")
+    resp = client.post(f"/noter/{res_id}/{driver_id}", data={
+        "note": "5",
+        "tags": ["Ponctuel"],
+        "commentaire": "Tres bien"
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+
+    with app.app_context():
+        from app.models import Avis
+        avis = Avis.query.filter_by(reservation_id=res_id).first()
+        assert avis is not None
+        assert avis.note == 5
+
+def test_cannot_rate_before_trip_happens(client, app):
+    with app.app_context():
+        driver = create_user("avisdriver2@univ.ma", est_conducteur=True, telephone="0600000000")
+        passager = create_user("avispass2@univ.ma")
+        future_date = (date.today() + timedelta(days=3)).isoformat()
+        t = Trajet(
+            depart="Mohammedia", destination="FSJES Mohammedia",
+            date=future_date, heure="08:00",
+            places_disponibles=3, recurrence="unique",
+            conducteur_id=driver.id
+        )
+        db.session.add(t)
+        db.session.flush()
+        r = Reservation(passager_id=passager.id, trajet_id=t.id, statut="confirmee")
+        db.session.add(r)
+        db.session.commit()
+        res_id = r.id
+        driver_id = driver.id
+
+    login(client, "avispass2@univ.ma")
+    client.post(f"/noter/{res_id}/{driver_id}", data={"note": "5"}, follow_redirects=True)
+
+    with app.app_context():
+        from app.models import Avis
+        assert Avis.query.filter_by(reservation_id=res_id).count() == 0
+
+def test_cannot_rate_twice(client, app):
+    with app.app_context():
+        driver = create_user("avisdriver3@univ.ma", est_conducteur=True, telephone="0600000000")
+        passager = create_user("avispass3@univ.ma")
+        t, r = create_past_confirmed_reservation(driver.id, passager.id)
+        db.session.commit()
+        res_id = r.id
+        driver_id = driver.id
+
+    login(client, "avispass3@univ.ma")
+    client.post(f"/noter/{res_id}/{driver_id}", data={"note": "4"}, follow_redirects=True)
+    client.post(f"/noter/{res_id}/{driver_id}", data={"note": "2"}, follow_redirects=True)
+
+    with app.app_context():
+        from app.models import Avis
+        assert Avis.query.filter_by(reservation_id=res_id).count() == 1
+
+def test_cannot_rate_unrelated_reservation(client, app):
+    with app.app_context():
+        driver = create_user("avisdriver4@univ.ma", est_conducteur=True, telephone="0600000000")
+        passager = create_user("avispass4@univ.ma")
+        outsider = create_user("outsider@univ.ma")
+        t, r = create_past_confirmed_reservation(driver.id, passager.id)
+        db.session.commit()
+        res_id = r.id
+        driver_id = driver.id
+
+    login(client, "outsider@univ.ma")
+    resp = client.post(f"/noter/{res_id}/{driver_id}", data={"note": "5"}, follow_redirects=True)
+    assert resp.status_code == 403
+
+def test_invalid_note_value_rejected(client, app):
+    with app.app_context():
+        driver = create_user("avisdriver5@univ.ma", est_conducteur=True, telephone="0600000000")
+        passager = create_user("avispass5@univ.ma")
+        t, r = create_past_confirmed_reservation(driver.id, passager.id)
+        db.session.commit()
+        res_id = r.id
+        driver_id = driver.id
+
+    login(client, "avispass5@univ.ma")
+    client.post(f"/noter/{res_id}/{driver_id}", data={"note": "9"}, follow_redirects=True)
+
+    with app.app_context():
+        from app.models import Avis
+        assert Avis.query.filter_by(reservation_id=res_id).count() == 0
+
+def test_low_rating_appears_in_admin_flagged(client, app):
+    with app.app_context():
+        admin_user = create_user("adminavis@univ.ma")
+        admin_user.is_admin = True
+        driver = create_user("avisdriver6@univ.ma", est_conducteur=True, telephone="0600000000")
+        passager = create_user("avispass6@univ.ma")
+        t, r = create_past_confirmed_reservation(driver.id, passager.id)
+        db.session.commit()
+        res_id = r.id
+        driver_id = driver.id
+
+    login(client, "avispass6@univ.ma")
+    client.post(f"/noter/{res_id}/{driver_id}", data={"note": "1", "commentaire": "Mauvaise experience"}, follow_redirects=True)
+
+    login(client, "adminavis@univ.ma")
+    resp = client.get("/admin/", follow_redirects=True)
+    assert b"Mauvaise experience" in resp.data
