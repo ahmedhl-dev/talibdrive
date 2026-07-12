@@ -46,32 +46,32 @@ def proposer():
         errors = []
 
         if not depart or len(depart) > 150:
-            errors.append("Le point de depart est invalide.")
+            errors.append("Le point de départ est invalide.")
 
         try:
             parsed_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             if parsed_date < date.today():
-                errors.append("La date ne peut pas etre dans le passe.")
+                errors.append("La date ne peut pas être dans le passé.")
             if parsed_date > date.today() + timedelta(days=365):
                 errors.append("La date est trop loin dans le futur.")
         except (ValueError, TypeError):
             errors.append("Date invalide.")
 
         try:
-            parsed_heure = datetime.strptime(heure, "%H:%M")
+            datetime.strptime(heure, "%H:%M")
         except (ValueError, TypeError):
             errors.append("Heure invalide.")
 
         try:
             places = int(places_raw)
             if places < 1 or places > 8:
-                errors.append("Le nombre de places doit etre entre 1 et 8.")
+                errors.append("Le nombre de places doit être entre 1 et 8.")
         except (ValueError, TypeError):
             errors.append("Nombre de places invalide.")
             places = None
 
         if recurrence not in ("unique", "quotidien"):
-            errors.append("Recurrence invalide.")
+            errors.append("Récurrence invalide.")
 
         if errors:
             for e in errors:
@@ -89,7 +89,7 @@ def proposer():
         )
         db.session.add(trajet)
         db.session.commit()
-        flash("Trajet propose avec succes!", "success")
+        flash("Trajet proposé avec succès !", "success")
         return redirect(url_for("trajets.index"))
 
     return render_template("trajets/proposer.html")
@@ -100,7 +100,7 @@ def proposer():
 def detail(trajet_id):
     trajet = Trajet.query.get_or_404(trajet_id)
     if trajet.conducteur_id != current_user.id:
-        flash("Acces refuse.", "error")
+        flash("Accès refusé.", "error")
         return redirect(url_for("trajets.index"))
 
     en_attente = [r for r in trajet.reservations if r.statut == "en_attente"]
@@ -109,8 +109,9 @@ def detail(trajet_id):
     today = date.today()
     try:
         start = max(datetime.strptime(trajet.date, "%Y-%m-%d").date(), today)
-    except:
+    except (ValueError, TypeError):
         start = today
+
     day_names = ["Lun", "Mar", "Mer", "Jeu", "Ven"]
     week_days = []
     d = start
