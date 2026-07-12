@@ -51,7 +51,7 @@
                     </a>
                 {% else %}
                     <a href="{{ url_for('reservations.mes_reservations') }}" class="text-gray-600 hover:text-green-700 transition">
-                        Mes reservations
+                        Mes réservations
                     </a>
                 {% endif %}
 
@@ -85,7 +85,7 @@
         {% if current_user.is_admin %}
         <a href="{{ url_for('admin.index') }}" class="text-purple-600 font-semibold">Admin</a>
         {% endif %}
-        <a href="{{ url_for('auth.logout') }}" class="bg-red-50 text-red-500 px-4 py-1.5 rounded-full text-center">Deconnexion</a>
+        <a href="{{ url_for('auth.logout') }}" class="bg-red-50 text-red-500 px-4 py-1.5 rounded-full text-center">Déconnexion</a>
     </div>
     {% endif %}
 
@@ -142,7 +142,7 @@
                 }
             },
             () => {
-                status.textContent = 'Acces au GPS refuse.';
+                status.textContent = 'Accès au GPS refusé.';
             }
         );
     }
