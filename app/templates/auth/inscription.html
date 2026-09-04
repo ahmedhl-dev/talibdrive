@@ -5,7 +5,7 @@
         <div class="inline-block mb-4">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="TalibDrive" class="h-28 w-auto mx-auto">
         </div>
-        <h2 class="text-2xl font-bold text-gray-800">Creer un compte</h2>
+        <h2 class="text-2xl font-bold text-gray-800">Créer un compte</h2>
         <p class="text-gray-400 text-sm mt-1">Rejoignez la communaute TalibDrive</p>
     </div>
     <form method="POST" class="space-y-4" id="inscription-form">
@@ -17,7 +17,7 @@
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prenom</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
                 <input type="text" name="prenom" required placeholder="Ex: Youssef"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
             </div>
@@ -38,7 +38,7 @@
                     <div id="bar-3" class="flex-1 rounded-full bg-gray-200 transition-colors"></div>
                     <div id="bar-4" class="flex-1 rounded-full bg-gray-200 transition-colors"></div>
                 </div>
-                <p id="password-feedback" class="text-xs text-gray-400 mt-1">Au moins 8 caracteres, avec majuscules, chiffres et symboles.</p>
+                <p id="password-feedback" class="text-xs text-gray-400 mt-1">Au moins 8 caractères, avec majuscules, chiffres et symboles.</p>
             </div>
         </div>
         <div>
@@ -66,19 +66,19 @@
                 <label for="est_conducteur" class="text-sm font-medium text-gray-700">Je suis conducteur</label>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Vehicule <span class="text-gray-400">(si conducteur)</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Véhicule <span class="text-gray-400">(si conducteur)</span></label>
                 <input type="text" name="vehicule" placeholder="Ex: Dacia Logan 2020"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Telephone <span class="text-red-400">*</span> <span class="text-gray-400">(si conducteur)</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone <span class="text-red-400">*</span> <span class="text-gray-400">(si conducteur)</span></label>
                 <input type="tel" name="telephone" placeholder="Ex: 0661234567"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
             </div>
         </div>
         <button type="submit" id="submit-btn"
             class="w-full bg-green-700 text-white py-2.5 rounded-xl hover:bg-green-800 transition font-semibold text-sm mt-2">
-            Creer mon compte
+            Créer mon compte
         </button>
     </form>
     <p class="text-sm text-center mt-6 text-gray-400">Déjà un compte ?
@@ -104,9 +104,9 @@ function checkStrength(pwd) {
 
 const colors = ["bg-gray-200", "bg-red-400", "bg-yellow-400", "bg-green-400", "bg-green-600"];
 const messages = [
-    "Au moins 8 caracteres, avec majuscules, chiffres et symboles.",
+"Au moins 8 caractères, avec majuscules, chiffres et symboles.",
     "Faible - ajoutez des majuscules, chiffres ou symboles.",
-    "Moyen - essayez d ajouter un symbole ou un chiffre.",
+"Moyen - essayez d'ajouter un symbole ou un chiffre.",
     "Bon mot de passe.",
     "Excellent mot de passe !"
 ];

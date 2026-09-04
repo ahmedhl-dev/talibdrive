@@ -11,7 +11,7 @@
             <p class="font-medium text-gray-800">{{ current_user.nom }}</p>
         </div>
         <div>
-            <p class="text-gray-400">Prenom</p>
+            <p class="text-gray-400">Prénom</p>
             <p class="font-medium text-gray-800">{{ current_user.prenom }}</p>
         </div>
         <div class="col-span-2">
@@ -30,11 +30,11 @@
         </div>
         {% if current_user.est_conducteur %}
         <div>
-            <p class="text-gray-400">Vehicule</p>
+            <p class="text-gray-400">Véhicule</p>
             <p class="font-medium text-gray-800">{{ current_user.vehicule or "-" }}</p>
         </div>
         <div>
-            <p class="text-gray-400">Telephone</p>
+            <p class="text-gray-400">Téléphone</p>
             <p class="font-medium text-gray-800">{{ current_user.telephone or "-" }}</p>
         </div>
         {% endif %}
@@ -64,7 +64,7 @@
         </div>
         <button type="submit"
             class="w-full bg-green-700 text-white py-2.5 rounded-xl hover:bg-green-800 transition font-semibold text-sm">
-            Mettre a jour le mot de passe
+            Mettre à jour le mot de passe
         </button>
     </form>
 </div>
