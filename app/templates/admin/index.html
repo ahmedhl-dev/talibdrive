@@ -112,9 +112,9 @@
                         {% if res.statut == "en_attente" %}
                             <span class="bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full text-xs">En attente</span>
                         {% elif res.statut == "confirmee" %}
-                            <span class="bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-xs">Confirmee</span>
+                            <span class="bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-xs">Confirmée</span>
                         {% elif res.statut == "refusee" %}
-                            <span class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs">Refusee</span>
+                            <span class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs">Refusée</span>
                         {% endif %}
                     </td>
                     <td class="px-5 py-3">
@@ -132,7 +132,7 @@
 </div>
 
 <div class="mb-10">
-    <h2 class="text-lg font-semibold text-gray-700 mb-4">🚩 Avis signales (note ≤ 2)</h2>
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">🚩 Avis signalés (note ≤ 2)</h2>
     {% if avis_signales %}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
         <table class="w-full text-sm min-w-[700px]">
@@ -161,7 +161,7 @@
         </table>
     </div>
     {% else %}
-    <p class="text-gray-400 text-sm">Aucun avis signale pour le moment.</p>
+    <p class="text-gray-400 text-sm">Aucun avis signalé pour le moment.</p>
     {% endif %}
 </div>
 
