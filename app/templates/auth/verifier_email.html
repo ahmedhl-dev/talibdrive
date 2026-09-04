@@ -4,7 +4,7 @@
     <div class="text-center mb-8">
         <div class="text-5xl mb-3">📧</div>
         <h2 class="text-2xl font-bold text-gray-800">Verifiez votre email</h2>
-        <p class="text-gray-400 text-sm mt-1">Un code a ete envoye a<br><span class="text-green-700 font-medium">{{ email }}</span></p>
+        <p class="text-gray-400 text-sm mt-1">Un code a été envoyé à<br><span class="text-green-700 font-medium">{{ email }}</span></p>
     </div>
     <form method="POST" class="space-y-5">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
