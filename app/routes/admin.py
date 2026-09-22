@@ -30,10 +30,57 @@ def index():
 @login_required
 @admin_required
 def supprimer_user(user_id):
+
     user = User.query.get_or_404(user_id)
+
     if user.is_admin:
         flash("Impossible de supprimer un administrateur.", "error")
         return redirect(url_for("admin.index"))
+
+    # Reservations where user is passenger
+    reservations = Reservation.query.filter_by(
+        passager_id=user.id
+    ).all()
+
+    for reservation in reservations:
+        Avis.query.filter_by(
+            reservation_id=reservation.id
+        ).delete(synchronize_session=False)
+
+    Reservation.query.filter_by(
+        passager_id=user.id
+    ).delete(synchronize_session=False)
+
+    # User's trips
+    for trajet in Trajet.query.filter_by(
+        conducteur_id=user.id
+    ).all():
+
+        reservations = Reservation.query.filter_by(
+            trajet_id=trajet.id
+        ).all()
+
+        for reservation in reservations:
+            Avis.query.filter_by(
+                reservation_id=reservation.id
+            ).delete(synchronize_session=False)
+
+        Reservation.query.filter_by(
+            trajet_id=trajet.id
+        ).delete(synchronize_session=False)
+
+        TrajetLog.query.filter_by(
+            trajet_id=trajet.id
+        ).delete(synchronize_session=False)
+
+        db.session.delete(trajet)
+
+    db.session.delete(user)
+
+    db.session.commit()
+
+    flash("Utilisateur supprimé.", "success")
+    return redirect(url_for("admin.index"))
 
     Reservation.query.filter_by(passager_id=user.id).delete()
     for trajet in Trajet.query.filter_by(conducteur_id=user.id).all():
@@ -50,11 +97,30 @@ def supprimer_user(user_id):
 @login_required
 @admin_required
 def supprimer_trajet(trajet_id):
+
     trajet = Trajet.query.get_or_404(trajet_id)
-    Reservation.query.filter_by(trajet_id=trajet.id).delete()
-    TrajetLog.query.filter_by(trajet_id=trajet.id).delete()
+
+    reservations = Reservation.query.filter_by(
+        trajet_id=trajet.id
+    ).all()
+
+    for reservation in reservations:
+        Avis.query.filter_by(
+            reservation_id=reservation.id
+        ).delete(synchronize_session=False)
+
+    Reservation.query.filter_by(
+        trajet_id=trajet.id
+    ).delete(synchronize_session=False)
+
+    TrajetLog.query.filter_by(
+        trajet_id=trajet.id
+    ).delete(synchronize_session=False)
+
     db.session.delete(trajet)
+
     db.session.commit()
+
     flash("Trajet supprimé.", "success")
     return redirect(url_for("admin.index"))
 
@@ -63,8 +129,13 @@ def supprimer_trajet(trajet_id):
 @admin_required
 def supprimer_reservation(res_id):
     res = Reservation.query.get_or_404(res_id)
+
+    Avis.query.filter_by(
+        reservation_id=res.id
+    ).delete(synchronize_session=False)
     db.session.delete(res)
     db.session.commit()
+
     flash("Réservation supprimée.", "success")
     return redirect(url_for("admin.index"))
 
