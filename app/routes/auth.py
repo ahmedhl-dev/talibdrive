@@ -17,7 +17,7 @@ def generate_code():
     return str(random.randint(100000, 999999))
 
 @auth.route('/inscription', methods=['GET', 'POST'])
-@limiter.limit("10 per hour")
+@limiter.limit("100 per hour")
 def inscription():
     if request.method == 'POST':
         nom = request.form.get('nom', '').strip()
