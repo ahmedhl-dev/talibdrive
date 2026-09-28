@@ -61,27 +61,44 @@ def inscription():
             flash('Cet email est déjà utilisé.', 'error')
             return redirect(url_for('auth.inscription'))
 
-        code = generate_code()
+        # code = generate_code()
+        # hashed_password = generate_password_hash(mot_de_passe)
+        # new_user = User(
+        #     nom=nom, prenom=prenom, email=email,
+        #     mot_de_passe=hashed_password, zone_depart=zone_depart,
+        #     est_conducteur=est_conducteur, vehicule=vehicule or None,
+        #     telephone=telephone or None,
+        #     email_verifie=False,
+        #     code_verification=code,
+        #     code_expiration=datetime.now(timezone.utc) + timedelta(minutes=15)
+        # )
+        # db.session.add(new_user)
+        # db.session.commit()
+
+        # sent = send_verification_email(email, prenom, code)
+        # if not sent:
+        #     flash("Compte créé, mais l'envoi de l'email a échoué. Contactez l'administrateur.", "error")
+
+        # session['pending_verification_email'] = email
+        # flash('Compte créé ! Vérifiez votre email pour activer votre compte.', 'success')
+        # return redirect(url_for('auth.verifier_email'))
+        
         hashed_password = generate_password_hash(mot_de_passe)
         new_user = User(
             nom=nom, prenom=prenom, email=email,
             mot_de_passe=hashed_password, zone_depart=zone_depart,
             est_conducteur=est_conducteur, vehicule=vehicule or None,
             telephone=telephone or None,
-            email_verifie=False,
-            code_verification=code,
-            code_expiration=datetime.now(timezone.utc) + timedelta(minutes=15)
+            email_verifie=True,  # TEMP: verification disabled for testing
+            code_verification=None,
+            code_expiration=None
         )
         db.session.add(new_user)
         db.session.commit()
 
-        sent = send_verification_email(email, prenom, code)
-        if not sent:
-            flash("Compte créé, mais l'envoi de l'email a échoué. Contactez l'administrateur.", "error")
-
-        session['pending_verification_email'] = email
-        flash('Compte créé ! Vérifiez votre email pour activer votre compte.', 'success')
-        return redirect(url_for('auth.verifier_email'))
+        login_user(new_user)
+        flash('Compte créé avec succès ! Bienvenue sur TalibDrive.', 'success')
+        return redirect(url_for('trajets.index'))
 
     return render_template('auth/inscription.html')
 
